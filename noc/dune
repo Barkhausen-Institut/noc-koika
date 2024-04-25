@@ -1,0 +1,23 @@
+; subdirectories will automatically be included
+; prefixed with their directory name
+; (include_subdirs qualified)
+; a theory is a collection of .v files
+(coq.theory
+; (package tcu)
+ (name noc)
+ (modules :standard)
+ (mode vo)
+
+ ; tell dune, that we depend on 'koika'
+ ; this referes to 'koika/coq/dune'
+ (theories Ltac2 Koika)
+)
+
+(env
+ (dev (flags (:standard -w -39))))
+
+;; --- DO NOT EDIT BELOW THIS LINE (use ‘make configure’) ---
+(dirs :standard _objects)
+
+;; TODO regenerate for extraction
+
