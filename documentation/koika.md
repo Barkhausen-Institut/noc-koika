@@ -1,6 +1,6 @@
-#Koika
+# Koika
 
-##Rules
+## Rules
 
 * Rules are used instead of synchronous "always" blocks.
 * Unlike "always" blocks rules are not run concurrently but using One Rule At A Time (ORAAT) semantics.
@@ -19,7 +19,7 @@ Inductive rule_name_t :=
 
 
 
-##External Functions
+## External Functions
 
 * External functions are used to access the external IPs.
 * All external functions need to be defined in ```ext_fn_t```
@@ -32,7 +32,7 @@ Inductive ext_fn_t :=
 * The inputs and output types of the external function have to be defined.
 * If no external functions are present empty_ext_fn_t needs to be defined in above inductive data type.
 
-##Functions
+## Functions
 
 ```
 Definition inc: UInternalFunction reg_t ext_fn_t :=
