@@ -76,7 +76,7 @@ Inductive rule_name_t :=
 Definition _route0_r : uaction reg_t empty_ext_fn_t :=
 {{
 let m0 := read0(in0) in
-let addr0 := m0[Ob~1~0~0~0] in
+let addr0 := m0[Ob~1~0~0] in
     if !addr0 then
       write0(ou0, m0)
     else 
@@ -86,7 +86,7 @@ let addr0 := m0[Ob~1~0~0~0] in
 Definition _route1_r : uaction reg_t empty_ext_fn_t :=
 {{
 let m1 := read0(in1) in
-let addr1 := m1[Ob~1~0~0~0] in
+let addr1 := m1[Ob~1~0~0] in
     if !addr1 then
       write0(ou0, m1)
     else 
