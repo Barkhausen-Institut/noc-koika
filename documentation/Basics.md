@@ -1,6 +1,6 @@
 # Basics
 
-# Network on chips
+## Network on chips
 
 * Traditionally a bus was used to communicate across multiple cores, but a bus interface is not scalable and can only be used upto dozens of cores. NOCs provide a solution to this problem.
 * In NOCs, it is difficult to ensure that message sent from one core will rach its destination. Situations such as deadlock, livelocks, misrouting, and starvation may arise.
@@ -54,6 +54,10 @@ The GeNoC framework (for Generic Network-on-Chip) provides a methodology to
 do parametric proofs over NoCs.  The definition of
 the model relies on three independent groups of constrained functions:
 routing and topology, scheduling, interface
+
+xMAS
+
+Channels can be either queue-based (FIFO) or central buffer (any message can be chosen)
 
 ## Quotes
 * The contribution of this thesis consists of easy and scalable mechanical verific-
