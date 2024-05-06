@@ -42,11 +42,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1714055637,
-        "narHash": "sha256-urGAMtIcaJOdf3C5M1DAVHbiDhF3zheL0J8DJjN3fW8=",
+        "lastModified": 1714981677,
+        "narHash": "sha256-J6r1ZmZVSNFYNO6BRtpGaGnyKbNtIkzb5JSmp34t/bE=",
         "owner": "Barkhausen-Institut",
         "repo": "koika",
-        "rev": "0f761e385b44656e46345b540d2023adeb640e67",
+        "rev": "909c318666a1e225c81515790819cdac5e7f8400",
         "type": "github"
       },
       "original": {
