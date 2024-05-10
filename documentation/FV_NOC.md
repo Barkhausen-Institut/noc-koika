@@ -5,9 +5,9 @@
 * A communication network is deemed correct if any message will be eventually injected into it and if any injected message is eventually consumed correctly.
 * Messages arrive at the correct destination without any modifications.
 * Unlike commmunication protocols for Internet, on chip communications have to be deterministic; reordering, loss, and resending of messages are not an option.
-* Function argument - List of messages originated at source nodes. Returns the results received at destination node. 
+* NOC Function argument - List of messages originated at source nodes. Returns the results received at destination node. 
 
-## A General Model
+## A General Model of NOC
 
 * Consists of an arbitrary but finite number of nodes.
 * Topologies, Routing algorithm, and Scheduling policies are its essential aspects, but these elements can also be arbitrary.
@@ -21,6 +21,20 @@
     * Scheduling - An invariant must be preserved at all times in any admissable state of the network. The scheduling function manages conflicts,
     and generates a list of possible communications that satisfy the invariant. The invariant is assumed but not explicitly represented.
    
+## GeNOC
+    Input = List of transactions t=(id source msg dest)
+    
+
+## Proofs
+
+### Interface 
+    *  recieve(send(message))=message
+
+### Routing
+    * Routing Termination
+    * Routing Correctness - route r, begins with origin of m, ends with destination of m, and has at least two nodes
+
+### Scheduling 
 
 ## Misc.
 

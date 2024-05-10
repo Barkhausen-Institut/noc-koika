@@ -1,5 +1,7 @@
 Require Import Koika.Frontend.
 Require Import Koika.Std.
+Require Import Koika.Testing.
+
 
 (* Structure of standard flit *)
 (* also used as burst header *)
@@ -78,9 +80,9 @@ Module Design.
     | route0_r
     | route1_r.
 
-  Definition _route0_r : uaction reg_t empty_ext_fn_t :=
+  Definition _route0_r i : uaction reg_t empty_ext_fn_t :=
   {{
-  let m0 := read0(in0) in
+  let m0 := read0(i) in
   let addr0 := m0[Ob~1~0~0] in
       if !addr0 then
         write0(ou0, m0)
@@ -88,20 +90,11 @@ Module Design.
         write0(ou1, m0) 
   }}. 
 
-  Definition _route1_r : uaction reg_t empty_ext_fn_t :=
-  {{
-  let m1 := read0(in1) in
-  let addr1 := m1[Ob~1~0~0] in
-      if !addr1 then
-        write0(ou0, m1)
-      else 
-        write0(ou1, m1) 
-  }}.
 
   Definition to_action rl :=
     match rl with
-    | route0_r => _route0_r
-    | route1_r => _route1_r
+    | route0_r => _route0_r in0
+    | route1_r => _route0_r in1
     end.
 
 
@@ -135,24 +128,35 @@ Module TestSetup.
 End TestSetup.
 *)
 
-Require Import Koika.Testing.
 
 Module PropTests.
 
   Import Design.
   Import Testing.
-  
-  Notation run_action action reg_vals := (run_action' R rules action reg_vals).
-  Definition run_schedule := run_schedule' R rules.
 
-   (* Checking both registers: *)
-  Example assert_ou0:
-    let ctxt    := run_action route0_r r in
-    let bits_ou0 := ctxt.[ou0]           in
-    let nat_ou0  := Bits.to_nat bits_r0 in
-    assertion (nat_ou0 = 8).
-  check.
+  Goal
+    run_action r (rules route0_r)
+    (fun ctxt =>
+      let bits_r0 := ctxt.[ou0] in
+      Bits.to_nat bits_r0 = 8
+    ).
+  Proof.
+    check.
   Defined.
+
+Goal
+run_action r (rules route1_r)
+    (fun ctxt =>
+      let bits_r0 := ctxt.[ou1] in
+      Bits.to_nat bits_r0 = 20
+    ).
+    Proof.
+    check.
+  Defined.
+
+  
+
+  
 
   
 
