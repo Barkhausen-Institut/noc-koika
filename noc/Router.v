@@ -51,50 +51,69 @@ End Types.
 
 Module Design.
 
+  Import Types.
+
   Notation sz := 5.
 
   Inductive reg_t :=
       | in0
       | in1
+      | in0nd
+      | in1nd    
       | ou0
       | ou1
       .
+  
+(*  Inductive ext_fn_t :=
+    | Inputin0
+    | Inputin1
+      .
+*)
 
-  Definition R reg :=
-      match reg with
-      | in0 => bits_t sz
-      | in1 => bits_t sz
-      | ou0 => bits_t sz
-      | ou1 => bits_t sz
-      end.
+Definition R reg :=
+  match reg with
+  | in0 => struct_t basic_flit
+  | in1 => struct_t basic_flit
+  | in0nd => bits_t 1
+  | in1nd => bits_t 1                     
+  | ou0 => struct_t basic_flit
+  | ou1 => struct_t basic_flit
+  end.
 
-  Definition r idx : R idx :=
-      match idx with
-      | in0 => Bits.of_nat sz 8
-      | in1 => Bits.of_nat sz 20
-      | ou0 => Bits.of_nat sz 0
-      | ou1 => Bits.of_nat sz 0
-      end.
-
-  Inductive rule_name_t :=
-    | route0_r
-    | route1_r.
-
-  Definition _route0_r i : uaction reg_t empty_ext_fn_t :=
+Definition r idx : R idx :=
+  match idx with
+  | in0 => value_of_bits Bits.zero
+  | in1 => value_of_bits Bits.zero
+  | in0nd => Bits.of_nat 1 1
+  | in1nd => Bits.of_nat 1 1                     
+  | ou0 => value_of_bits Bits.zero
+  | ou1 => value_of_bits Bits.zero
+  end.
+  
+Inductive rule_name_t :=
+  | route0_r
+  | route1_r.
+  
+Definition _route0_r i i_nd : uaction reg_t empty_ext_fn_t :=
   {{
-  let m0 := read0(i) in
-  let addr0 := m0[Ob~1~0~0] in
-      if !addr0 then
+    let newdata := read0(i_nd) in
+    write0(i_nd, Ob~0); 
+  if newdata then
+    let m0 := read0(i) in 
+    let addr0 := get(m0, trg) in
+    if !addr0 then
         write0(ou0, m0)
-      else 
-        write0(ou1, m0) 
-  }}. 
+    else 
+      write0(ou1, m0)
+  else
+    fail 
+  }}.
 
 
   Definition to_action rl :=
     match rl with
-    | route0_r => _route0_r in0
-    | route1_r => _route0_r in1
+    | route0_r => _route0_r in0 in0nd
+    | route1_r => _route0_r in1 in1nd
     end.
 
 
