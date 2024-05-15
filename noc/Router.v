@@ -59,11 +59,11 @@ Module Design.
       | in0
       | in1
       | in0nd
-      | in1nd    
+      | in1nd
       | ou0
       | ou1
       .
-  
+
 (*  Inductive ext_fn_t :=
     | Inputin0
     | Inputin1
@@ -72,35 +72,35 @@ Module Design.
 
 Definition R reg :=
   match reg with
-  | in0 => struct_t basic_flit
-  | in1 => struct_t basic_flit
+  | in0 => bits_t (struct_sz basic_flit)
+  | in1 => bits_t (struct_sz basic_flit)
   | in0nd => bits_t 1
-  | in1nd => bits_t 1                     
-  | ou0 => struct_t basic_flit
-  | ou1 => struct_t basic_flit
+  | in1nd => bits_t 1
+  | ou0 => bits_t (struct_sz basic_flit)
+  | ou1 => bits_t (struct_sz basic_flit)
   end.
 
 Definition r idx : R idx :=
   match idx with
-  | in0 => value_of_bits Bits.zero
-  | in1 => value_of_bits Bits.zero
+  | in0 => Bits.of_nat 5 8
+  | in1 => Bits.of_nat 5 20
   | in0nd => Bits.of_nat 1 1
-  | in1nd => Bits.of_nat 1 1                     
-  | ou0 => value_of_bits Bits.zero
-  | ou1 => value_of_bits Bits.zero
+  | in1nd => Bits.of_nat 1 1
+  | ou0 => Bits.zero
+  | ou1 => Bits.zero
   end.
-  
+
 Inductive rule_name_t :=
   | route0_r
   | route1_r.
-  
+
 Definition _route0_r i i_nd : uaction reg_t empty_ext_fn_t :=
   {{
     let newdata := read0(i_nd) in
-    write0(i_nd, Ob~0); 
+    write0(i_nd, Ob~0);
   if newdata then
-    let m0 := read0(i) in 
-    let addr0 := get(m0, trg) in
+    let m0 := read0(i) in
+    let addr0 := get(unpack(struct_t basic_flit, m0), trg) in
     if !addr0 then
         write0(ou0, m0)
     else 
@@ -173,14 +173,14 @@ run_action r (rules route1_r)
     check.
   Defined.
 
-  
-
-  
-
-  
-
-
-
-
-
-
+(*Set nd = 0*)
+Goal
+run_action r (rules route0_r)
+    (fun ctxt =>
+       let bits_r0 := ctxt.[ou1] in
+       let bits_in0nd := ctxt.[in0nd] in
+       Bits.to_nat bits_in0nd = 0 /\ Bits.to_nat bits_r0=0
+    ).
+    Proof.
+    check.
+  Defined.
