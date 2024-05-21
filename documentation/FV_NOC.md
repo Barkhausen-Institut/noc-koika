@@ -40,6 +40,21 @@
 
 * Missives = whole messages (standard_flit type)
 
+
+## Properties 
+
+### Router level
+* Messages arrive at correct destination without modification
+    * Router input = Router output
+* For all xm>xr message will be routed to xr+1, similar for xm < xr
+* If xm> xlength then message is invalid. all xm < xlength (xm is destination)
+* Priority
+### Network level
+
+* Messages recieved are equivalent to the ones sent into the network.
+* Routing Correctness - route r, begins with origin of m, ends with destination of m, and has at least two nodes
+* Deadlock free
+
 ## References
 
 [^1] title={A functional formalization of on chip communications},year={2008},author={Julien Schmaltz and Julien Schmaltz and D. Borrione and Dominique Borrione

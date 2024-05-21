@@ -16,9 +16,11 @@
         * Switch applies arbitration to determine which ingoing channel is served.
         * The set of possible channels to which a message can be routed in one step is called the next hops of the message.
         * Routing can be deterministic (fixed no. of hops) or adaptive (variable no. of hops).
+            * Deterministic will always used the shortest route possible but is susceptible to faults.
+            * Adaptive routing may use non optimal routes but it is fault tolerant.
         * Processing nodes decides the next hop at the end of the channel.
     
-    * **Network Layer** - Contains transfer protocol between two nodes.
+    * **Link Layer** - Contains transfer protocol between two nodes.
 
 ## Formal Verification
 
