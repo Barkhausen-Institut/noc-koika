@@ -9,6 +9,16 @@ Require Import Koika.Testing.
 
 Module Types.
 
+  Definition xy_cord :=
+    {|
+    struct_name := "xy_cord";
+    struct_fields :=
+      [
+        ("x" , bits_t 1);
+        ("y" , bits_t 1)
+      ]
+    |}.
+  
   Definition standard_flit :=
   {|
   struct_name := "standard_flit";
@@ -42,7 +52,7 @@ Module Types.
   struct_name := "basic_flit";
   struct_fields :=
     [
-      ("trg" , bits_t 1);
+      ("trg" , bits_t 2);
       ("data" , bits_t 4)
     ]
   |}.
@@ -53,7 +63,7 @@ Module Design.
 
   Import Types.
 
-  Notation sz := 5.
+  Notation sz := 6.
 
   Inductive reg_t :=
       | in0
@@ -70,6 +80,27 @@ Module Design.
       .
 *)
 
+Definition send1: UInternalFunction reg_t empty_ext_fn_t :=
+  {{ fun send1 (value: bits_t 6) : unit_t =>
+    write0(ou1, value)
+  }}.
+
+Definition receive1: UInternalFunction reg_t empty_ext_fn_t :=
+  {{ fun receive1 () : bits_t 6 =>
+    read0(in1)
+  }}.
+
+Definition send0: UInternalFunction reg_t empty_ext_fn_t :=
+  {{ fun send0 (value: bits_t 6) : unit_t =>
+    write0(ou0, value)
+  }}.
+
+Definition receive0: UInternalFunction reg_t empty_ext_fn_t :=
+  {{ fun receive0 () : bits_t 6 =>
+    read0(in0)
+  }}.
+
+
 Definition R reg :=
   match reg with
   | in0 => bits_t (struct_sz basic_flit)
@@ -82,8 +113,8 @@ Definition R reg :=
 
 Definition r idx : R idx :=
   match idx with
-  | in0 => Bits.of_nat 5 8
-  | in1 => Bits.of_nat 5 20
+  | in0 => Bits.of_nat 6 49
+  | in1 => Bits.of_nat 6 20
   | in0nd => Bits.of_nat 1 1
   | in1nd => Bits.of_nat 1 1
   | ou0 => Bits.zero
@@ -106,47 +137,64 @@ Definition _route0_r i i_nd : uaction reg_t empty_ext_fn_t :=
     else 
       write0(ou1, m0)
   else
-    fail 
+    fail
+    (*write0(ou0, Ob~0~0~0~0~0)*) 
   }}.
 
 
-  Definition to_action rl :=
-    match rl with
-    | route0_r => _route0_r in0 in0nd
-    | route1_r => _route0_r in1 in1nd
-    end.
+Definition _routexy_r i : uaction reg_t empty_ext_fn_t :=
+  {{
+    let r_addr := Ob~0~0 in
+    let m0 := read0(i) in
+    let addr := get(unpack(struct_t basic_flit, m0), trg) in
+    if addr[Ob~1] > r_addr[Ob~1] then
+        write0(ou0, m0)
+    else if addr[Ob~0] > r_addr[Ob~0] then
+        write0(ou1, m0)
+    else
+      pass
+  }}.
 
+Check Ob~0~0.
+Compute {{Ob~0~0[Ob~0]}}.
+Print Syntax.uaction. 
+Definition _routepr_r (r_addr2: bits_t 2) (receive send0 send1: UInternalFunction reg_t empty_ext_fn_t) : uaction reg_t empty_ext_fn_t :=
+  UBind "r_addr" (USugar (UConstBits r_addr2))
+  {{
+      let m0 := receive() in
+       let addr := get(unpack(struct_t basic_flit, m0), trg) in
+    if addr[Ob~1] > r_addr[Ob~1] then
+        send0(m0)
+    else if addr[Ob~0] > r_addr[Ob~0] then
+        send1(m0)
+    else
+      pass
+  }}.
+
+Print _routepr_r.
+ (* Definition to_action rl :=
+    match rl with
+    | route0_r => _routepr_r Ob~0~0 receive0 send0 send1
+    | route1_r => _routepr_r Ob~0~0 receive1 send0 send1
+    end. *)
+
+
+
+Definition to_action rl :=
+    match rl with
+    | route0_r => _routepr_r Ob~0~0 receive0 send0 send1
+    | route1_r => _routepr_r Ob~0~0 receive1 send0 send1
+    end.
 
   Definition schedule : scheduler :=
   route0_r |> route1_r |> done.
+
+Print Syntax.uaction.
 
   Definition rules :=
     tc_rules R empty_Sigma to_action.
 
 End Design.
-
-(*
-Module TestSetup.
-
-  Import Design.
-
-  Notation run_action_no_compute' R rules action reg_vals :=
-    (must'' (run_action_no_compute R rules action reg_vals)).
-
-  (*! Define some convenience functions. !*)
-  Notation run_action action reg_vals := (run_action' R rules action reg_vals).
-  Definition run_schedule := run_schedule' R rules.
-
-  (*! Type check the function right here. !*)
-  Definition fun_3x :=
-    tc_function R empty_Sigma times_three.
-
-  Definition fun_isodd :=
-    tc_function R empty_Sigma isodd.
-
-End TestSetup.
-*)
-
 
 Module PropTests.
 
@@ -157,7 +205,7 @@ Module PropTests.
     run_action r (rules route0_r)
     (fun ctxt =>
       let bits_r0 := ctxt.[ou0] in
-      Bits.to_nat bits_r0 = 8
+      Bits.to_nat bits_r0 = 49
     ).
   Proof.
     check.
@@ -173,14 +221,29 @@ run_action r (rules route1_r)
     check.
   Defined.
 
-(*Set nd = 0*)
-Goal
-run_action r (rules route0_r)
+
+  Goal
+    run_schedule r rules empty_sigma schedule
     (fun ctxt =>
-       let bits_r0 := ctxt.[ou1] in
-       let bits_in0nd := ctxt.[in0nd] in
-       Bits.to_nat bits_in0nd = 0 /\ Bits.to_nat bits_r0=0
-    ).
-    Proof.
+       let r' := (fun idx => 
+                    match idx with
+                    | in0 => ctxt.[in0]
+                    | in1 =>  ctxt.[in1]
+                    | in0nd =>  ctxt.[in0nd]
+                    | in1nd => ctxt.[in1nd]
+                    | ou0 =>  ctxt.[ou0]
+                    | ou1 =>  ctxt.[ou1]
+                    end ) in
+
+       run_schedule r' rules empty_sigma schedule
+         (fun ctxt2 =>
+            let bits_ou0 := ctxt2.[ou0]           in
+            let nat_ou0  := Bits.to_nat bits_ou0 in
+
+            nat_ou0 = 8
+    )).
+  Proof.
     check.
   Defined.
+
+End PropTests.
