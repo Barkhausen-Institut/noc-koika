@@ -157,9 +157,9 @@ Definition receiver0d5_0_c: UInternalFunction reg_t empty_ext_fn_t :=
   }}.
 
 
-Definition _routepr_r (r_addr: bits_t 2) (receive0 receive1 send0 send1: UInternalFunction reg_t empty_ext_fn_t) : uaction reg_t empty_ext_fn_t :=
+Definition _routepr_r (r_addr2: bits_t 2) (receive0 receive1 send0 send1: UInternalFunction reg_t empty_ext_fn_t) : uaction reg_t empty_ext_fn_t :=
+  UBind "r_addr" (USugar (UConstBits r_addr2))
   {{
-      let r_addr := Ob~0~0 in
       let m0 := receive0() ^ receive1() in
        let addr := get(unpack(struct_t basic_flit, m0), trg) in
     if addr[Ob~1] > r_addr[Ob~1] then
@@ -169,7 +169,6 @@ Definition _routepr_r (r_addr: bits_t 2) (receive0 receive1 send0 send1: UIntern
     else
       pass
   }}.
-
 
 
 (*Definition _routepr_r r send receive address : uaction r empty_ext_fn_t :=
@@ -189,13 +188,18 @@ Definition _routepr_r (r_addr: bits_t 2) (receive0 receive1 send0 send1: UIntern
 
 
 Inductive router_t :=
-  | rout4con r_addr
-  | rout6con 
+  | router2
+  | router3
+  | router4
+  .
 
  Definition to_action rl :=
-    list 
+     match rl with
+    | route0_r => _routepr_r Ob~0~0 receiver0d5_0_c receiver0_0d5_a sendr0d5_0_a sendr0_0d5_c 
+    | route1_r => _routepr_r Ob~0~1 receiver0_0d5_c receiver0d5_1_a sendr0_0d5_a sendr0d5_1_c
+    | route2_r => _routepr_r Ob~1~0 receiver0d5_1_c receiver1_0d5_a sendr0d5_1_a sendr1_0d5_c
+    | route3_r => _routepr_r Ob~1~1 receiver1_0d5_c receiver0d5_0_a sendr1_0d5_a sendr0d5_0_c
     end.
-
 
   Definition schedule : scheduler :=
   route0_r |> route1_r |> route3_r |>  route2_r |> done.
@@ -204,3 +208,52 @@ Inductive router_t :=
     tc_rules R empty_Sigma to_action.
 
 End Design.
+
+Module Proofs.
+Import Design.
+
+Goal
+    run_schedule r rules empty_sigma schedule
+    (fun ctxt =>
+       let r' := (fun idx => 
+                    match idx with
+                      | r0_0d5_c => ctxt.[r0_0d5_c]
+                      | r0_0d5_a => ctxt.[r0_0d5_a]
+                      | r0d5_1_c => ctxt.[r0d5_1_c]
+                      | r0d5_1_a => ctxt.[r0d5_1_a]
+                      | r1_0d5_c => ctxt.[r1_0d5_c]
+                      | r1_0d5_a => ctxt.[r1_0d5_a]
+                      | r0d5_0_c => ctxt.[r0d5_0_c]
+                      | r0d5_0_a => ctxt.[r0d5_0_a]
+                    end ) in
+
+       run_schedule r' rules empty_sigma schedule
+         (fun ctxt2 =>
+            let bits_ou0 := ctxt2.[r0d5_0_a] in
+            let nat_ou0  := Bits.to_nat bits_ou0 in
+
+            nat_ou0 = 49
+    )).
+
+  Proof.
+    check.
+  Defined.
+
+Theorem successful_transfer:
+  forall r : (forall reg : reg_t, R reg),
+  run_schedule r rules empty_sigma schedule
+    (fun ctxt =>
+       let r' := (fun idx => 
+                    match idx with
+                      | r0_0d5_c => ctxt.[r0_0d5_c]
+                      | r0_0d5_a => ctxt.[r0_0d5_a]
+                      | r0d5_1_c => ctxt.[r0d5_1_c]
+                      | r0d5_1_a => ctxt.[r0d5_1_a]
+                      | r1_0d5_c => ctxt.[r1_0d5_c]
+                      | r1_0d5_a => ctxt.[r1_0d5_a]
+                      | r0d5_0_c => ctxt.[r0d5_0_c]
+                      | r0d5_0_a => ctxt.[r0d5_0_a]
+                    end ) in
+
+       run_schedule r' rules empty_sigma schedule
+  End Proofs.
