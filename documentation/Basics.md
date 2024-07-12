@@ -61,6 +61,8 @@ xMAS
 
 Channels can be either queue-based (FIFO) or central buffer (any message can be chosen)
 
+Wormhole vs Packet Switching
+
 ## Quotes
 * The contribution of this thesis consists of easy and scalable mechanical verific-
 ation methods for communication networks. We formalize a notion of correctness,

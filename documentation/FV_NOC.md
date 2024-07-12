@@ -53,8 +53,45 @@
 
 * Messages recieved are equivalent to the ones sent into the network.
 * Routing Correctness - route r, begins with origin of m, ends with destination of m, and has at least two nodes
-* Deadlock free
 
+* Deadlock freedom - In a deadlock free network there is no state in which a set of messages is permanently blocked. 
+* Livelock Freedom - No livelocks should occur. A livelock is a scenario in which the moves infinitely in a network.
+* Starvation Freedom - When a message wants to acquire some resource but is never given access to.
+* Liveness of injection - A message that needs to be injected is eventually injected into the network.
+* Functional Correctness - Message follows a correct path, contents are not modified​, If it is consumed, it is consumed at the correct destination
+* Evacuation - Injected message is always consumed (Correctness doesnt matter)
+* Local liveness - Any message will eventually move from its current resource to next resource
+* Productivity - The net of all the above properties. That messages can always be injected and will be correctly consumed. 
+
+
+Functional Correctness:
+
+1. When a message is consumed its current location is its destination.
+2. All messages traverse a correct route through the network.
+3. The content of messages does not change.
+
+Correct Route - path of valid resources, first element is source last is destination
+
+Timimg Atack Resilient - In order to avoid timing attacks, the communication delay should be independent of the amount of traffic requesting the communication service to the router.
+
+Router Level
+
+* No packet loss inside the router
+* No packet duplication insdie the router
+* No packet modification inside the router
+* Packet that enters the router will eventually leave the router at some point of time
+* Packet is routed to the correct port according to its destination
+* Minimum and maximum age of packet?
+* Valid address of router
+* Min two connections, Max four connections
+
+Bufferlevel
+
+* Whatever applies to a queue
+* Read and write pointers are incremented when read and writes enables are set
+* Read and write pointers are not incremented when buffers are full or empty
+* The same number of packets that were written into the buffer can be read
+* Data that was read from buffer was written into it at some point
 ## References
 
 [^1] title={A functional formalization of on chip communications},year={2008},author={Julien Schmaltz and Julien Schmaltz and D. Borrione and Dominique Borrione
