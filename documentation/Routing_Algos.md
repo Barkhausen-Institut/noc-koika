@@ -22,6 +22,6 @@ Algorithms such as west first are adaptive, and provide multiple routes to avoid
 ## Router Configuration
 
 * Round Robin - Input ports are served in circular order and without priority
-* Starvation Free - Recently served port gets the lowest priority (advancements to starvation freeGatecrasher and Trickster)
+* Starvation Free - Recently served port gets the lowest priority (advancements to starvation free (Gatecrasher and Trickster)
 * Priority - Requests are priortised according to the order in which they are received
 * Time division multiplexing - Each port is given a time slot during which its communication request can be granted
