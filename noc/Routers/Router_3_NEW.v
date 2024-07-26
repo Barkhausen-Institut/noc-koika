@@ -79,11 +79,9 @@ Module Design.
 
   Inductive reg_t :=
     | north_in
-    | south_in
     | east_in
     | west_in 
     | north_out
-    | south_out
     | east_out
     | west_out
       .
@@ -97,11 +95,6 @@ Module Design.
 Definition northsend: UInternalFunction reg_t empty_ext_fn_t :=
   {{ fun northsend (value: bits_t 10) : unit_t =>
     write0(north_out, value)
-  }}.
-
-Definition southsend: UInternalFunction reg_t empty_ext_fn_t :=
-  {{ fun southsend (value: bits_t 10) : unit_t =>
-    write0(south_out, value)
   }}.
 
 Definition eastsend: UInternalFunction reg_t empty_ext_fn_t :=
@@ -119,10 +112,6 @@ Definition northreceive: UInternalFunction reg_t empty_ext_fn_t :=
     read0(north_in)
   }}.
 
-Definition southreceive: UInternalFunction reg_t empty_ext_fn_t :=
-  {{ fun southreceive () : bits_t 10 =>
-    read0(south_in)
-  }}.
 
 Definition eastreceive: UInternalFunction reg_t empty_ext_fn_t :=
   {{ fun eastreceive () : bits_t 10 =>
@@ -138,11 +127,9 @@ Definition westreceive: UInternalFunction reg_t empty_ext_fn_t :=
 Definition R ( reg : reg_t ) :=
   match reg with
   | north_in => bits_t (struct_sz basic_flit)
-  | south_in => bits_t (struct_sz basic_flit)
   | east_in => bits_t (struct_sz basic_flit)
   | west_in  => bits_t (struct_sz basic_flit)
   | north_out => bits_t (struct_sz basic_flit)
-  | south_out => bits_t (struct_sz basic_flit)
   | east_out => bits_t (struct_sz basic_flit)
   | west_out => bits_t (struct_sz basic_flit)
   end.
@@ -151,11 +138,9 @@ Definition R ( reg : reg_t ) :=
 Definition r (reg : reg_t) : R reg :=
   match reg with
   | north_in => Bits.of_nat 10 834
-  | south_in => Bits.zero
   | east_in => Bits.zero
   | west_in  => Bits.zero
   | north_out => Bits.zero
-  | south_out => Bits.zero
   | east_out => Bits.zero
   | west_out => Bits.zero
   end.
@@ -166,11 +151,11 @@ Inductive rule_name_t :=
 Check Ob~0~0.
 Compute {{Ob~0~0[Ob~0]}}.
 Print Syntax.uaction. 
-Definition _routepr_r (r_addr2: bits_t 4) (northreceive southreceive eastreceive westreceive northsend southsend eastsend westsend: UInternalFunction reg_t empty_ext_fn_t) 
+Definition _routepr_r (r_addr2: bits_t 4) (northreceive  eastreceive westreceive northsend eastsend westsend: UInternalFunction reg_t empty_ext_fn_t) 
 : uaction reg_t empty_ext_fn_t :=
   UBind "r_addr" (USugar (UConstBits r_addr2))
   {{
-    let m0 := northreceive() in
+    let m0 := northreceive() in (*router input policy will be added here*)
     let new_data := get(unpack(struct_t basic_flit, m0), new) in
     if (new_data) then
         let trg_x := get(unpack(struct_t basic_flit, m0), trg_x) in
@@ -185,7 +170,7 @@ Definition _routepr_r (r_addr2: bits_t 4) (northreceive southreceive eastreceive
         else if trg_y > src_y then
         northsend(m0)
         else if trg_y < src_y then
-        southsend(m0)
+        fail
         else
           pass    (*Pass to tile from this else*)
     else
@@ -198,7 +183,7 @@ Print _routepr_r.
 
 Definition to_action rl :=
     match rl with
-    | route0_r => _routepr_r Ob~0~1~0~1 northreceive southreceive eastreceive westreceive northsend southsend eastsend westsend
+    | route0_r => _routepr_r Ob~0~1~0~1 northreceive eastreceive westreceive northsend eastsend westsend
     end.
 
   Definition schedule : scheduler :=
@@ -282,15 +267,6 @@ Module RouterTests.
   | _ => Bits.zero
   end.
 
-  Lemma check_south:
-    run_action r_south (rules route0_r)
-    (fun ctxt =>
-      let bits_r0 := ctxt.[south_out] in
-      Bits.to_nat bits_r0 = 546
-    ).
-  Proof.
-    check.
-  Defined.
 
  
     
