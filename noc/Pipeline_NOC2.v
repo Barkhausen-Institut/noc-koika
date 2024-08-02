@@ -43,6 +43,7 @@ Inductive reg_t :=
   | r0
   | r1
   | r2
+  | debug
   .
 
 
@@ -107,10 +108,12 @@ Definition _routecenter_r (r_addr2: bits_t 4) (r0_send r1_send r0_receive r1_rec
   UBind "r_addr" (USugar (UConstBits r_addr2))
   {{
   let m0 := r0_receive() in (*router input policy will be added here*)
+  let m1 := r1_receive() in 
   let msg := unpack(struct_t basic_flit, m0) in
   let new_data := get(msg, new) in
   let src_p := get(msg, src) in
-  if (src_p != r_addr && new_data) then
+  (( if (src_p != r_addr && new_data) then
+      r0_send(pack(subst(msg, new, Ob~0)));
       let trg_x := get(msg, trg_x) in
       let trg_y := get(msg, trg_y) in
       let src_x := get(unpack(struct_t router_address, r_addr), x) in
@@ -123,7 +126,26 @@ Definition _routecenter_r (r_addr2: bits_t 4) (r0_send r1_send r0_receive r1_rec
       else
       pass    (*Pass to tile from this block*)
   else
-  pass
+  pass ));
+  let msg1 := unpack(struct_t basic_flit, m1) in
+  let new_data := get(msg1, new) in
+  let src_p := get(msg1, src) in
+  (( if (src_p != r_addr && new_data) then
+      r1_send(pack(subst(msg1, new, Ob~0)));
+      let trg_x := get(msg1, trg_x) in
+      let trg_y := get(msg1, trg_y) in
+      let src_x := get(unpack(struct_t router_address, r_addr), x) in
+      let src_y := get(unpack(struct_t router_address, r_addr), y) in
+      (*r_addr[|2`d0| :+ 2] if not using struct*)
+      if trg_x > src_x then
+      r1_send(pack(subst(msg1, src, r_addr)))
+      else if trg_x < src_x then
+      r0_send(pack(subst(msg1, src, r_addr)))
+      else
+      pass    (*Pass to tile from this block*)
+  else
+  pass ))
+
   }}.
 
 Definition _routeend_r (r_addr2: bits_t 4) (r0_send r0_receive: UInternalFunction reg_t empty_ext_fn_t) 
@@ -134,7 +156,7 @@ Definition _routeend_r (r_addr2: bits_t 4) (r0_send r0_receive: UInternalFunctio
   let msg := unpack(struct_t basic_flit, m0) in
   let new_data := get(msg, new) in
   let src_p := get(msg, src) in
-  if (src_p != r_addr && new_data) then
+  (( if (src_p != r_addr && new_data) then 
       let trg_x := get(msg, trg_x) in
       let trg_y := get(msg, trg_y) in
       let src_x := get(unpack(struct_t router_address, r_addr), x) in
@@ -147,7 +169,7 @@ Definition _routeend_r (r_addr2: bits_t 4) (r0_send r0_receive: UInternalFunctio
       else
       pass    (*Pass to tile from this block*)
   else
-  pass
+  pass ))
   }}.
 Inductive rule_name_t :=
   | route0_r
@@ -168,18 +190,20 @@ Definition R ( reg : reg_t ) :=
   |  r0 => bits_t (struct_sz basic_flit)
   |  r1 => bits_t (struct_sz basic_flit)
   |  r2 => bits_t (struct_sz basic_flit)
+  |  debug => bits_t (struct_sz basic_flit)
   end.
   
-(*0000 0011 00001*)
 Definition r (reg : reg_t) : R reg :=
   match reg with
-  |  r0 => Bits.of_nat 14 8289 
+  |  r0 => Bits.zero
   |  r1 => Bits.zero
   |  r2 => Bits.zero
+  |  debug => Bits.zero
   end.
 
-  Definition schedule : scheduler :=
-    route3_r |> route2_r |> route1_r |>  route0_r |> done.
+Definition schedule : scheduler :=
+    route3_r |> route2_r |> route1_r |>  route0_r |> done. 
+     (* route0_r |> route1_r |> route2_r |>  route3_r |> done.  *)
 
 Definition rules :=
   tc_rules R empty_Sigma to_action.
@@ -189,14 +213,52 @@ End Design.
 Module Proofs.
 Import Design.
 
+Definition r_r2l (reg : reg_t) : R reg :=
+  match reg with
+  |  r0 => Bits.zero 
+  |  r1 => Bits.zero
+  |  r2 => Bits.of_nat 14 9729
+  | debug => Bits.zero
+  end.
+
 Goal
-run_schedule r rules empty_sigma schedule
+run_schedule r_r2l rules empty_sigma schedule
 (fun ctxt =>
 let r' := (fun idx => 
 match idx with
   | r0=> ctxt.[r0]
   | r1=> ctxt.[r1]
   | r2=> ctxt.[r2]
+  | debug => ctxt.[debug]
+  end ) in
+
+run_schedule r' rules empty_sigma schedule
+(fun ctxt2 =>
+let bits_r0 := ctxt2.[r0] in
+Bits.to_nat bits_r0 = 8705)).
+  Proof.
+    check.
+  Defined.
+
+
+(*8289 = 1 0000 0011 00001*)
+Definition r_l2r (reg : reg_t) : R reg :=
+  match reg with
+  |  r0 => Bits.of_nat 14 8289 
+  |  r1 => Bits.zero
+  |  r2 => Bits.zero
+  | debug => Bits.zero
+  end.
+
+Goal
+run_schedule r_l2r rules empty_sigma schedule
+(fun ctxt =>
+let r' := (fun idx => 
+match idx with
+  | r0=> ctxt.[r0]
+  | r1=> ctxt.[r1]
+  | r2=> ctxt.[r2]
+  | debug => ctxt.[debug]
   end ) in
 
 run_schedule r' rules empty_sigma schedule
