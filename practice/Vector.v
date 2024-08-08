@@ -13,3 +13,11 @@ Definition myVector':= [1;2;3].
 Check myVector'.
 Definition array2d := [[1]].
 Check array2d.
+
+Fixpoint vector_sum {n : nat} (v : t nat n) : nat :=
+  match v with
+  | nil _ => 0
+  | cons _ h _ t => h + vector_sum t
+  end.
+
+Compute (vector_sum myVector').
