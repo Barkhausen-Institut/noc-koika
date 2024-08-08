@@ -11,7 +11,7 @@
           inherit system;
           overlays = [ koika.overlays.default ];
         };
-        ocamlPackages = pkgs.ocaml-ng.ocamlPackages_4_09;
+        ocamlPackages = pkgs.ocaml-ng.ocamlPackages_4_12;
 
         coq = pkgs.coq_8_14.override {
           customOCamlPackages = ocamlPackages;
@@ -52,7 +52,7 @@
             [ pkgs.coqPackages_8_14.koika ]
             ++
             (with coqPackages; [
-              equations
+              equations metacoq
             ]);
 
           shellHook = ''
