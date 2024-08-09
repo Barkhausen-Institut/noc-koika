@@ -1,7 +1,7 @@
 (* Distributed under the terms of the MIT license. *)
 
 From MetaCoq.Template Require Import All.
-Import MetaCoq.Template.utils.
+From MetaCoq.Utils Require Import utils.
 
 Import MCMonadNotation.
 
