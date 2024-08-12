@@ -33,36 +33,39 @@ End Types.
 
 Module Registers.
 Require Import List.
+Import MCMonadNotation.
 
 From MetaCoq Require Import bytestring.
 Open Scope bs.
 Notation regno := 3.
+Notation nocsize := 4.
 
-Fixpoint generate_constructors (n : nat) : list constructor_body :=
+Check "r".
+Fixpoint generate_constructors (prefix: string) (n : nat) : list constructor_body :=
   match n with
   | 0 => []
   | S n' =>
-    let name := "r" ++ string_of_nat (S n') in
+    let name := prefix ++ string_of_nat (S n') in
     let cstr := {| cstr_name := name;
                    cstr_args := [];
                    cstr_indices := [];
                    cstr_type := tRel 0;
                    cstr_arity := 0 |} in
-    cstr :: generate_constructors n'
+    cstr :: generate_constructors prefix n'
   end.
 
-Definition quoteregt :=  {|
+Definition quoteind (ind_name : string) (prefix : string) (no_cstr :nat) :=  {|
 ind_finite := Finite;
 ind_npars := 0;
 ind_params := [];
 ind_bodies :=
 [{|
-     ind_name := "reg_t";
+     ind_name := ind_name;
      ind_indices := [];
      ind_sort := sType (Universe.make' Level.lzero);
      ind_type := tSort (sType (Universe.make' Level.lzero));
      ind_kelim := IntoAny;
-     ind_ctors := generate_constructors 3;
+     ind_ctors := generate_constructors prefix no_cstr;
      ind_projs := [];
      ind_relevance := Relevant
    |}];
@@ -71,9 +74,14 @@ ind_variance := None
 |}.
 
 MetaCoq Run (
-  tmMkInductive' quoteregt
+  tmMkInductive' (quoteind "reg_t" "r" regno) ;;
+  tmMkInductive' (quoteind "rule_name_t" "router_" nocsize)
 ).
 
+
+
+Print reg_t.
+Print rule_name_t.
 End Registers.
 
 Module Design.
@@ -100,9 +108,10 @@ Definition r_receive (reg_name: reg_t) : UInternalFunction reg_t empty_ext_fn_t 
     read0(reg_name)
   }}.
 
-Definition _routestart_r (r_addr2: bits_t 4) (r0_send r0_receive: UInternalFunction reg_t empty_ext_fn_t) 
+Print UBind.
+Definition _routestart_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg_t empty_ext_fn_t) 
 : uaction reg_t empty_ext_fn_t :=
-UBind "r_addr" (USugar (UConstBits r_addr2))
+UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
 {{
     let m0 := r0_receive() in (*router input policy will be added here*)
     let msg := unpack(struct_t basic_flit, m0) in
@@ -124,9 +133,9 @@ UBind "r_addr" (USugar (UConstBits r_addr2))
     pass ))
 }}.
   
-Definition _routecenter_r (r_addr2: bits_t 4) (r0_send r1_send r0_receive r1_receive: UInternalFunction reg_t empty_ext_fn_t) 
+Definition _routecenter_r (r_addr2: nat) (r0_send r1_send r0_receive r1_receive: UInternalFunction reg_t empty_ext_fn_t) 
 : uaction reg_t empty_ext_fn_t :=
-  UBind "r_addr" (USugar (UConstBits r_addr2))
+  UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
   {{
   let m0 := r0_receive() in (*router input policy will be added here*)
   let m1 := r1_receive() in 
@@ -169,9 +178,9 @@ Definition _routecenter_r (r_addr2: bits_t 4) (r0_send r1_send r0_receive r1_rec
 
   }}.
 
-Definition _routeend_r (r_addr2: bits_t 4) (r0_send r0_receive: UInternalFunction reg_t empty_ext_fn_t) 
+Definition _routeend_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg_t empty_ext_fn_t) 
 : uaction reg_t empty_ext_fn_t :=
-  UBind "r_addr" (USugar (UConstBits r_addr2))
+  UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
   {{
   let m0 := r0_receive() in (*router input policy will be added here*)
   let msg := unpack(struct_t basic_flit, m0) in
@@ -192,19 +201,25 @@ Definition _routeend_r (r_addr2: bits_t 4) (r0_send r0_receive: UInternalFunctio
   else
   pass ))
   }}.
-Inductive rule_name_t :=
-  | route0_r
-  | route1_r
-  | route2_r
-  | route3_r.
 
 Definition to_action rl :=
   match rl with
-  | route0_r => _routestart_r Ob~0~0~0~0 (r_send r1) (r_receive r1)
-  | route1_r => _routecenter_r Ob~0~0~0~1 (r_send r1) (r_send r2) (r_receive r1) (r_receive r2)
-  | route2_r => _routecenter_r Ob~0~0~1~0 (r_send r2) (r_send r3) (r_receive r2) (r_receive r3)
-  | route3_r => _routeend_r Ob~0~0~1~1 (r_send r3) (r_receive r3)
+  | router_1 => _routestart_r 0 (r_send r1) (r_receive r1)
+  | router_2 => _routecenter_r 1 (r_send r1) (r_send r2) (r_receive r1) (r_receive r2)
+  | router_3 => _routecenter_r 2 (r_send r2) (r_send r3) (r_receive r2) (r_receive r3)
+  | router_4 => _routeend_r 3 (r_send r3) (r_receive r3)
   end.
+
+(*MetaCoq Test Quote (let rl := route0_r in
+match rl with
+| route0_r => _routestart_r 0 (r_send r1) (r_receive r1)
+| route1_r => _routecenter_r 1 (r_send r1) (r_send r2) (r_receive r1) (r_receive r2)
+| route2_r => _routecenter_r 2 (r_send r2) (r_send r3) (r_receive r2) (r_receive r3)
+| route3_r => _routeend_r 3 (r_send r3) (r_receive r3)
+end).
+
+MetaCoq Quote Recursively Definition quoted_toaction := to_action.
+Print quoted_toaction. *)
 
 Definition R ( reg : reg_t ) :=
   match reg with
@@ -221,7 +236,7 @@ Definition r (reg : reg_t) : R reg :=
   end.
 
 Definition schedule : scheduler :=
-    route3_r |> route2_r |> route1_r |>  route0_r |> done. 
+    router_4 |> router_3 |> router_2 |>  router_1 |> done. 
      (* route0_r |> route1_r |> route2_r |>  route3_r |> done.  *)
 
 Definition rules :=
