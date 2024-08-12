@@ -35,6 +35,8 @@ Inductive reg_t:=
 
 MetaCoq Quote Definition quotedreg := reg_t.
 Print quotedreg.
+MetaCoq Quote Recursively Definition quote_rec_reg := reg_t.
+Print quote_rec_reg.
 
 Definition quotedr := (tConstruct
 {|
@@ -42,8 +44,8 @@ Definition quotedr := (tConstruct
   inductive_ind := 0
 |} 1 []).
 
-Print quotedr.
-
 MetaCoq Unquote Definition r3 := quotedr.
 
 Print r3.
+
+Check tApp.
