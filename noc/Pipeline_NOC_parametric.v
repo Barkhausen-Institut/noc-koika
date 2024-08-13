@@ -202,7 +202,293 @@ Definition _routeend_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg
   pass ))
   }}.
 
-Definition to_action rl :=
+Definition match_syn := (tLambda {| binder_name := nNamed "rl"%bs; binder_relevance := Relevant |}
+(tInd
+ {|
+     inductive_mind :=
+       (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Registers"%bs,
+        "rule_name_t"%bs);
+     inductive_ind := 0
+   |} [])
+(tCase
+   {|
+     ci_ind :=
+       {|
+         inductive_mind :=
+           (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Registers"%bs,
+            "rule_name_t"%bs);
+         inductive_ind := 0
+       |};
+     ci_npar := 0;
+     ci_relevance := Relevant
+   |}
+   {|
+     puinst := [];
+     pparams := [];
+     pcontext :=
+       [{| binder_name := nNamed "rl"%bs; binder_relevance := Relevant |}];
+     preturn :=
+       tApp
+         (tInd
+            {|
+              inductive_mind :=
+                (MPfile ["Syntax"%bs; "Koika"%bs], "uaction"%bs);
+              inductive_ind := 0
+            |} [])
+         [tConst (MPfile ["Frontend"%bs; "Koika"%bs], "pos_t"%bs) [];
+          tConst (MPfile ["Frontend"%bs; "Koika"%bs], "var_t"%bs) [];
+          tConst (MPfile ["Frontend"%bs; "Koika"%bs], "fn_name_t"%bs) [];
+          tInd
+            {|
+              inductive_mind :=
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                   "Registers"%bs, "reg_t"%bs);
+              inductive_ind := 0
+            |} [];
+          tInd
+            {|
+              inductive_mind :=
+                (MPfile ["Interop"%bs; "Koika"%bs], "empty_ext_fn_t"%bs);
+              inductive_ind := 0
+            |} []]
+   |} (tRel 0)
+   [{|
+      bcontext := [];
+      bbody :=
+        tApp
+          (tConst
+             (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+              "_routeend_r"%bs) [])
+          [tApp
+             (tConstruct
+                {|
+                  inductive_mind :=
+                    (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "nat"%bs);
+                  inductive_ind := 0
+                |} 1 [])
+             [tApp
+                (tConstruct
+                   {|
+                     inductive_mind :=
+                       (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
+                        "nat"%bs);
+                     inductive_ind := 0
+                   |} 1 [])
+                [tApp
+                   (tConstruct
+                      {|
+                        inductive_mind :=
+                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
+                           "nat"%bs);
+                        inductive_ind := 0
+                      |} 1 [])
+                   [tConstruct
+                      {|
+                        inductive_mind :=
+                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
+                           "nat"%bs);
+                        inductive_ind := 0
+                      |} 0 []]]];
+           tApp
+             (tConst
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+                 "r_send"%bs) [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                       "Registers"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} 0 []];
+           tApp
+             (tConst
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+                 "r_receive"%bs) [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                       "Registers"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} 0 []]]
+    |};
+    {|
+      bcontext := [];
+      bbody :=
+        tApp
+          (tConst
+             (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+              "_routecenter_r"%bs) [])
+          [tApp
+             (tConstruct
+                {|
+                  inductive_mind :=
+                    (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "nat"%bs);
+                  inductive_ind := 0
+                |} 1 [])
+             [tApp
+                (tConstruct
+                   {|
+                     inductive_mind :=
+                       (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
+                        "nat"%bs);
+                     inductive_ind := 0
+                   |} 1 [])
+                [tConstruct
+                   {|
+                     inductive_mind :=
+                       (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
+                        "nat"%bs);
+                     inductive_ind := 0
+                   |} 0 []]];
+           tApp
+             (tConst
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+                 "r_send"%bs) [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                       "Registers"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} 1 []];
+           tApp
+             (tConst
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+                 "r_send"%bs) [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                       "Registers"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} 0 []];
+           tApp
+             (tConst
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+                 "r_receive"%bs) [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                       "Registers"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} 1 []];
+           tApp
+             (tConst
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+                 "r_receive"%bs) [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                       "Registers"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} 0 []]]
+    |};
+    {|
+      bcontext := [];
+      bbody :=
+        tApp
+          (tConst
+             (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+              "_routecenter_r"%bs) [])
+          [tApp
+             (tConstruct
+                {|
+                  inductive_mind :=
+                    (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "nat"%bs);
+                  inductive_ind := 0
+                |} 1 [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "nat"%bs);
+                  inductive_ind := 0
+                |} 0 []];
+           tApp
+             (tConst
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+                 "r_send"%bs) [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                       "Registers"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} 2 []];
+           tApp
+             (tConst
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+                 "r_send"%bs) [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                       "Registers"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} 1 []];
+           tApp
+             (tConst
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+                 "r_receive"%bs) [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                       "Registers"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} 2 []];
+           tApp
+             (tConst
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+                 "r_receive"%bs) [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                       "Registers"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} 1 []]]
+    |};
+    {|
+      bcontext := [];
+      bbody :=
+        tApp
+          (tConst
+             (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+              "_routestart_r"%bs) [])
+          [tConstruct
+             {|
+               inductive_mind :=
+                 (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "nat"%bs);
+               inductive_ind := 0
+             |} 0 [];
+           tApp
+             (tConst
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+                 "r_send"%bs) [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                       "Registers"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} 2 []];
+           tApp
+             (tConst
+                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
+                 "r_receive"%bs) [])
+             [tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+                       "Registers"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} 2 []]]
+    |}])).
+
+(* Definition to_action (rl: rule_name_t) := 
   match rl with
   | router_1 => _routestart_r 0 (r_send r1) (r_receive r1)
   | router_2 => _routecenter_r 1 (r_send r1) (r_send r2) (r_receive r1) (r_receive r2)
@@ -210,16 +496,18 @@ Definition to_action rl :=
   | router_4 => _routeend_r 3 (r_send r3) (r_receive r3)
   end.
 
-(*MetaCoq Test Quote (let rl := route0_r in
-match rl with
-| route0_r => _routestart_r 0 (r_send r1) (r_receive r1)
-| route1_r => _routecenter_r 1 (r_send r1) (r_send r2) (r_receive r1) (r_receive r2)
-| route2_r => _routecenter_r 2 (r_send r2) (r_send r3) (r_receive r2) (r_receive r3)
-| route3_r => _routeend_r 3 (r_send r3) (r_receive r3)
-end).
+MetaCoq Quote Definition testl:= Eval hnf in to_action.
+Print testl.
 
-MetaCoq Quote Recursively Definition quoted_toaction := to_action.
-Print quoted_toaction. *)
+MetaCoq Test Quote (let rl := router_1 in
+match rl with
+| router_1 => _routestart_r 0 (r_send r1) (r_receive r1)
+| router_2 => _routecenter_r 1 (r_send r1) (r_send r2) (r_receive r1) (r_receive r2)
+| router_3 => _routecenter_r 2 (r_send r2) (r_send r3) (r_receive r2) (r_receive r3)
+| router_4 => _routeend_r 3 (r_send r3) (r_receive r3)
+end).*)
+
+MetaCoq Run ( tmMkDefinition "to_action"%bs match_syn).
 
 Definition R ( reg : reg_t ) :=
   match reg with
