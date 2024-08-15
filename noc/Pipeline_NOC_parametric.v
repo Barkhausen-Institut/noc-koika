@@ -37,10 +37,11 @@ Import MCMonadNotation.
 
 From MetaCoq Require Import bytestring.
 Open Scope bs.
-Notation regno := 3.
-Notation nocsize := 4.
-Notation regprefix := "r".
-Notation ruleprefix := "router_".
+Definition nocsize := 4.
+Definition regno := (Nat.sub nocsize 1).
+Compute regno.
+Definition regprefix := "r".
+Definition ruleprefix := "router_".
 
 Fixpoint rev {A : Type} (l:list A) : list A :=
     match l with
@@ -501,7 +502,7 @@ match idx with
 
 run_schedule r' rules empty_sigma schedule
 (fun ctxt2 =>
-let bits_r0 := ctxt2.[r3] in
+let bits_r0 := ctxt2.[r3]in
 Bits.to_nat bits_r0 = 9313)).
   Proof.
     check.
