@@ -266,30 +266,27 @@ Fixpoint generate_branches (n:nat): list (branch term) :=
       (tConst
          (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
           "routecenterfn"%bs) [])
-      [ (nat_to_term 2);
+      [ (nat_to_term n');
        tConstruct
          {|
            inductive_mind :=
              (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
                 "Registers"%bs, "reg_t"%bs);
            inductive_ind := 0
-         |} (Nat.sub n' 2) [];
+         |} (Nat.sub n' 1) [];
        tConstruct
          {|
            inductive_mind :=
              (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
                 "Registers"%bs, "reg_t"%bs);
            inductive_ind := 0
-         |} (Nat.sub n 2) []]
+         |} n' []]
 |} in
 branchterm :: generate_branches n'
 (* | n =>  *)
   end.
 
-Definition test := Eval compute in generate_branches 3.
-Print test.
-
-Fixpoint modify_last_item (l : list (branch term)) : list (branch term) :=
+Definition add_last_router (l : list (branch term)) : list (branch term) :=
   match l with
   | [] => []
   | _ =>
@@ -306,88 +303,13 @@ Fixpoint modify_last_item (l : list (branch term)) : list (branch term) :=
             (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
                 "Registers"%bs, "reg_t"%bs);
           inductive_ind := 0
-        |} (Compute Nat.sub n 2) []]
+        |} (Nat.sub nocsize 2) []]
 |} in
-  l ++ last_term;
+  l ++ [last_term]
   end.
 
-(* Definition branch_body : list (branch term) :=
-     [{|
-        bcontext := [];
-        bbody :=
-          tApp
-            (tConst
-               (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
-                "routestartfn"%bs) [])
-            [tConstruct
-               {|
-                 inductive_mind :=
-                   (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-                      "Registers"%bs, "reg_t"%bs);
-                 inductive_ind := 0
-               |} 0 []]
-      |};
-      {|
-        bcontext := [];
-        bbody :=
-          tApp
-            (tConst
-               (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
-                "routecenterfn"%bs) [])
-            [(nat_to_term 1);
-             tConstruct
-               {|
-                 inductive_mind :=
-                   (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-                      "Registers"%bs, "reg_t"%bs);
-                 inductive_ind := 0
-               |} 0 [];
-             tConstruct
-               {|
-                 inductive_mind :=
-                   (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-                      "Registers"%bs, "reg_t"%bs);
-                 inductive_ind := 0
-               |} 1 []]
-      |};
-      {|
-        bcontext := [];
-        bbody :=
-          tApp
-            (tConst
-               (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
-                "routecenterfn"%bs) [])
-            [ (nat_to_term 2);
-             tConstruct
-               {|
-                 inductive_mind :=
-                   (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-                      "Registers"%bs, "reg_t"%bs);
-                 inductive_ind := 0
-               |} 1 [];
-             tConstruct
-               {|
-                 inductive_mind :=
-                   (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-                      "Registers"%bs, "reg_t"%bs);
-                 inductive_ind := 0
-               |} 2 []]
-      |};
-      {|
-        bcontext := [];
-        bbody :=
-          tApp
-            (tConst
-               (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
-                "routeendfn"%bs) [])
-            [tConstruct
-               {|
-                 inductive_mind :=
-                   (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-                      "Registers"%bs, "reg_t"%bs);
-                 inductive_ind := 0
-               |} 2 []]
-      |}]. *)
+
+Definition branch_body := Eval compute in add_last_router(rev(generate_branches regno)).
 
 Definition match_syn := (tLambda {| binder_name := nNamed "rl"%bs; binder_relevance := Relevant |}
 (tInd
@@ -455,21 +377,70 @@ end).*)
 
 Definition R ( reg : reg_t ) :=
   match reg with
-  |  r1 => bits_t (struct_sz basic_flit)
-  |  r2 => bits_t (struct_sz basic_flit)
-  |  r3 => bits_t (struct_sz basic_flit)
+  |  _ => bits_t (struct_sz basic_flit)
   end.
   
 Definition r (reg : reg_t) : R reg :=
   match reg with
-  |  r3 => Bits.zero
-  |  r1 => Bits.zero
-  |  r2 => Bits.zero
+  |  _ => Bits.zero
   end.
 
+(* 
 Definition schedule : scheduler :=
     router_4 |> router_3 |> router_2 |>  router_1 |> done. 
+
+    MetaCoq Quote Definition test:= Eval hnf in schedule.
+    Print test.  *)
      (* route0_r |> route1_r |> route2_r |>  route3_r |> done.  *)
+
+Fixpoint generate_scheduler (n: nat) : term :=
+  match n with
+  | 0 => let sterm:= tApp
+  (tConstruct
+     {|
+       inductive_mind :=
+         (MPfile ["Syntax"%bs; "Koika"%bs], "scheduler"%bs);
+       inductive_ind := 0
+     |} 0 []) 
+  [tConst (MPfile ["Frontend"%bs; "Koika"%bs], "pos_t"%bs) [];
+  tInd
+    {|
+      inductive_mind :=
+        (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+           "Registers"%bs, "rule_name_t"%bs);
+      inductive_ind := 0
+    |} []] in sterm
+    | S n' => let sterm:= tApp (tConstruct
+    {|
+      inductive_mind :=
+        (MPfile ["Syntax"%bs; "Koika"%bs], "scheduler"%bs);
+      inductive_ind := 0
+    |} 1 [])
+    [tConst (MPfile ["Frontend"%bs; "Koika"%bs], "pos_t"%bs) [];
+    tInd
+      {|
+        inductive_mind :=
+          (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+             "Registers"%bs, "rule_name_t"%bs);
+        inductive_ind := 0
+      |} [];
+    tConstruct
+      {|
+        inductive_mind :=
+          (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
+             "Registers"%bs, "rule_name_t"%bs);
+        inductive_ind := 0
+      |} n' []; generate_scheduler n' ]
+      in sterm
+      end.
+
+(* Definition sched:= Eval compute in (generate_scheduler 4).    
+MetaCoq Unquote Definition sche:= sched.
+Print sche. *)
+Definition scheduler_synatx := Eval compute in (generate_scheduler nocsize).
+
+ MetaCoq Run ( tmMkDefinition "schedule"%bs scheduler_synatx).  
+
 
 Definition rules :=
   tc_rules R empty_Sigma to_action.
