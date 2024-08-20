@@ -206,24 +206,24 @@ Definition _routeend_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg
   pass ))
   }}.
 
-Definition routecenterfn (n:nat) (r1 r2 : reg_t): uaction reg_t empty_ext_fn_t :=
-  _routecenter_r n (r_send r1) (r_send r2) (r_receive r1) (r_receive r2).
-
-Definition routestartfn (r1 : reg_t): uaction reg_t empty_ext_fn_t :=
-  _routestart_r 0 (r_send r1) (r_receive r1). 
-
-Definition routeendfn  (r1 : reg_t): uaction reg_t empty_ext_fn_t :=
-  _routeend_r regno (r_send r1) (r_receive r1).
+  Definition routecenterfn (n:nat) (r1 r2 : reg_t): uaction reg_t empty_ext_fn_t :=
+    _routecenter_r n (r_send r1) (r_send r2) (r_receive r1) (r_receive r2).
+  
+  Definition routestartfn (n:nat) (r1 : reg_t): uaction reg_t empty_ext_fn_t :=
+    _routestart_r n (r_send r1) (r_receive r1). 
+  
+  Definition routeendfn (n:nat) (r1 : reg_t): uaction reg_t empty_ext_fn_t :=
+    _routeend_r n (r_send r1) (r_receive r1).
 
 (* Definition to_action (rl: rule_name_t) := 
   match rl with
-  | router_1 => routestartfn r1
+  | router_1 => routestartfn 0 r1
   | router_2 => routecenterfn 1 r1 r2
   | router_3 => routecenterfn 2 r2 r3
-  | router_4 => routeendfn r3
+  | router_4 => routeendfn 3 r3
   end.
 
-MetaCoq Quote Definition testl:= Eval hnf in to_action.
+MetaCoq Quote Definition testl:= Eval unfold to_action in to_action.
 Print testl. *)
 Fixpoint nat_to_term (n : nat) : term :=
   match n with
@@ -252,7 +252,8 @@ Fixpoint generate_branches (n:nat): list (branch term) :=
             (tConst
               (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
                 "routestartfn"%bs) [])
-            [tConstruct
+            [(nat_to_term 0);
+            tConstruct
               {|
                 inductive_mind :=
                   (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
@@ -284,8 +285,8 @@ Fixpoint generate_branches (n:nat): list (branch term) :=
          |} n' []]
 |} in
 branchterm :: generate_branches n'
-(* | n =>  *)
   end.
+
 
 Definition add_last_router (l : list (branch term)) : list (branch term) :=
   match l with
@@ -298,7 +299,8 @@ Definition add_last_router (l : list (branch term)) : list (branch term) :=
       (tConst
         (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
           "routeendfn"%bs) [])
-      [tConstruct
+      [(nat_to_term (Nat.sub nocsize 1));
+      tConstruct
         {|
           inductive_mind :=
             (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
