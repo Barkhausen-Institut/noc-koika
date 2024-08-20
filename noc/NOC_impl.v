@@ -278,15 +278,13 @@ Definition r (reg : reg_t) : R reg :=
   |  _ => Bits.zero
   end.
 
-
-   MetaCoq Quote Definition testl:= routeendfn.
-  Print testl.  
 MetaCoq Run ( tmMkDefinition "to_action"%bs match_syn).  
 
 MetaCoq Run ( tmMkDefinition "schedule"%bs scheduler_synatx). 
 
 Definition rules :=
   tc_rules R empty_Sigma to_action.
+
 End NOCImpl.
 
 Module Proofs.
