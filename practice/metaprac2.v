@@ -1,4 +1,5 @@
-Load MetaCoqPrelude.
+(* Load MetaCoqPrelude. *)
+Require Import MetaCoq.Template.All.
 
 Module monad.
 
@@ -33,7 +34,7 @@ Inductive reg_t:=
 | r1
 .
 
-MetaCoq Quote Definition quotedreg := reg_t.
+MetaCoq Quote Definition quotedreg := r1.
 Print quotedreg.
 MetaCoq Quote Recursively Definition quote_rec_reg := reg_t.
 Print quote_rec_reg.
@@ -49,3 +50,12 @@ MetaCoq Unquote Definition r3 := quotedr.
 Print r3.
 
 Check tApp.
+
+Definition mydef x:= (
+            match x with
+              | 0 => 0
+              | S n => n
+            end).
+
+MetaCoq Quote Definition mydef := mydefqu.
+Print quotedx.
