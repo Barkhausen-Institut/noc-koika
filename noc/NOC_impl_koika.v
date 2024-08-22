@@ -1,58 +1,59 @@
 Require Import Koika.Frontend.
 Require Import Koika.Std.
 Require Import Koika.Testing.
-Require Import Types.
+Require Import NOC_setup.
 Require Import Router.
+Require Import Types.
 
-Module Type NOC_data.
-  Parameter nocsize: nat.
-End NOC_data.
 
-(* Module DynamicNOC(ND:NOC_data).
-Import ND. *)
-Module Design.
+
+Module MyNOCSize <: NOC_data.
+  Definition nocsize := 4.  
+End MyNOCSize.
+
+Module Design:= NOCSetup(MyNOCSize).
+Import Design.
+Import MyNOCSize.
 Import Types.
-Definition nocsize:=4.
-Definition regno := (Nat.sub nocsize 1).
-
-Inductive reg_t := reg_ (n: Vect.index regno).
-Inductive rule_name_t := router_ (n: Vect.index nocsize).
-
 Definition reg n :=
   reg_ (match index_of_nat regno n with
         | Some n => n
         | None => thisone
         end).
-
+Print MyNOCSize.nocsize.
 Definition router n :=
   router_ (match index_of_nat nocsize n with
         | Some n => n
         | None => thisone
-        end).
+        end). 
 
-
-Print reg_t.
+        
 Module MyRegs <: Registers.
 Definition reg_t:=reg_t.
 End MyRegs.
 
 
-Module Routerfns:= Router(MyRegs).
+Module Routerfns:= Router(MyRegs).        
 Import Routerfns.
-Definition routefail(r_addr2: nat) (r0: reg_t) 
-: uaction reg_t empty_ext_fn_t :=
-{{ fail }}.
-Compute router 5.
-Compute router_ (anotherone (anotherone (anotherone (anotherone _)))).
-Definition to_action rl :=
+
+(* Definition to_action rl :=
   match rl with
   | router_ (thisone)  => routestartfn 0 (reg 0)
   | router_ (anotherone thisone) => routecenterfn 1 (reg 0) (reg 1)  
   | router_ (anotherone (anotherone thisone))  => routecenterfn 2 (reg 1) (reg 2)
   | router_ (anotherone (anotherone (anotherone thisone)))  => routeendfn 3 (reg 2)
   | router_ (anotherone (anotherone (anotherone (anotherone _)))) => routefail 0 (reg 0) 
-  end.
+  end. *)
 
+
+
+Definition to_action rl :=
+match rl with
+| router_ idx => let idx_nat := index_to_nat idx in
+  if Nat.eqb idx_nat 0 then (routestartfn 0 (reg 0)) 
+  else if Nat.eqb idx_nat regno then (routeendfn regno (reg (Nat.sub regno 1))) 
+  else (routecenterfn idx_nat (reg (Nat.sub idx_nat 1)) (reg idx_nat))  
+end.
 
 Definition R ( reg : reg_t ) :=
   match reg with
@@ -64,14 +65,18 @@ Definition r (reg : reg_t) : R reg :=
   |  _ => Bits.zero
   end.
 
-  Definition schedule : scheduler :=
-    (router 3) |> (router 2) |> (router 1) |>  (router 0) |> done. 
-     (* route0_r |> route1_r |> route2_r |>  route3_r |> done.  *)
+  Fixpoint schedule_gen (n:nat): scheduler:=
+  match n with
+  | 0 => done
+  | S n' => (router n') |> (schedule_gen n')
+  end.
 
-Definition rules :=
-  tc_rules R empty_Sigma to_action.
+  Definition schedule : scheduler := schedule_gen nocsize.
+    (* (router 3) |> (router 2) |> (router 1) |>  (router 0) |> done.  *)
+    Definition rules :=
+        tc_rules R empty_Sigma to_action.
+
 End Design.
-
 Module Proofs.
 Import Design.
 
