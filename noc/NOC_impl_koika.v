@@ -4,9 +4,8 @@ Require Import Koika.Testing.
 Require Import NOC_setup.
 Require Import Router.
 Require Import Types.
-
-
-
+Set Equations Transparent.
+Import Types.
 Module MyNOCSize <: NOC_data.
   Definition nocsize := 4.  
 End MyNOCSize.
@@ -15,45 +14,85 @@ Module Design:= NOCSetup(MyNOCSize).
 Import Design.
 Import MyNOCSize.
 Import Types.
+
 Definition reg n :=
   reg_ (match index_of_nat regno n with
         | Some n => n
         | None => thisone
         end).
 Print MyNOCSize.nocsize.
-Definition router n :=
+(* Definition router n :=
   router_ (match index_of_nat nocsize n with
         | Some n => n
         | None => thisone
-        end). 
+        end).  *)
 
         
 Module MyRegs <: Registers.
 Definition reg_t:=reg_t.
 End MyRegs.
 
-
+Print rule_name_t.
 Module Routerfns:= Router(MyRegs).        
 Import Routerfns.
+Check thisone.
+(*
+Module Routerfns:= Router(MyRegs).        
+Import Routerfns. 
+*)
 
+Definition _routetest (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg_t empty_ext_fn_t) 
+: uaction reg_t empty_ext_fn_t :=
+UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
+{{
+    let m0 := r0_receive() in (*router input policy will be added here*)
+    r0_send(m0)
+}}.
+  
+Definition routetest (n: nat) (reg : reg_t):= _routetest n (r_send reg) (r_receive reg).
 (* Definition to_action rl :=
   match rl with
-  | router_ (thisone)  => routestartfn 0 (reg 0)
-  | router_ (anotherone thisone) => routecenterfn 1 (reg 0) (reg 1)  
-  | router_ (anotherone (anotherone thisone))  => routecenterfn 2 (reg 1) (reg 2)
-  | router_ (anotherone (anotherone (anotherone thisone)))  => routeendfn 3 (reg 2)
-  | router_ (anotherone (anotherone (anotherone (anotherone _)))) => routefail 0 (reg 0) 
+  | route0_r => _routestart_r Ob~0~0~0~0 (r_send r0) (r_receive r0)
+  | route1_r => _routecenter_r Ob~0~0~0~1 (r_send r0) (r_send r1) (r_receive r0) (r_receive r1)
+  | route2_r => _routecenter_r Ob~0~0~1~0 (r_send r1) (r_send r2) (r_receive r1) (r_receive r2)
+  | route3_r => _routeend_r Ob~0~0~1~1 (r_send r2) (r_receive r2)
   end. *)
 
+  Equations to_action (rl:rule_name_t) : uaction reg_t empty_ext_fn_t :=
+  to_action route0_r  := routetest 0 (reg_ (thisone));
+  to_action route1_r := routecenterfn 1 (reg_ (thisone)) (reg_ (anotherone thisone));
+  to_action route2_r := routecenterfn 2 (reg_ (anotherone thisone)) (reg_ (anotherone (anotherone thisone)));
+  to_action route3_r := routeendfn 3 (reg_ (anotherone (anotherone thisone))).
+
+  Definition schedule : scheduler :=
+    route3_r |> route2_r |> route1_r |>  route0_r |> done.
+(* Equations to_action (rl:rule_name_t) : uaction reg_t empty_ext_fn_t :=
+  to_action (router_ thisone)  := routestartfn 0 (reg_ (thisone));
+  to_action (router_ (anotherone thisone)) := routecenterfn 1 (reg_ (thisone)) (reg_ (anotherone thisone));
+  to_action (router_ (anotherone (anotherone thisone))) := routecenterfn 2 (reg_ (anotherone thisone)) (reg_ (anotherone (anotherone thisone)));
+  to_action (router_ (anotherone (anotherone (anotherone thisone)))) := routeendfn 3 (reg_ (anotherone (anotherone thisone))). *)
+
+  (* Equations to_action (rl : rule_name_t) : uaction reg_t empty_ext_fn_t := 
+  to_action (router_ idx) :=
+    let idx_nat := index_to_nat idx in
+    if Nat.eqb idx_nat 0 then
+      routestartfn 0 (reg_ idx)
+    else if Nat.eqb idx_nat regno then
+      let idx' := index_of_nat (Nat.sub idx_nat - 1) in
+      routeendfn regno (reg_ idx')
+    else
+      let idx' := index_of_nat (Nat.sub idx_nat - 1) in
+      routecenterfn idx_nat (reg_ idx') (reg_ idx). *)
+     
 
 
-Definition to_action rl :=
+(* Definition to_action rl :=
 match rl with
 | router_ idx => let idx_nat := index_to_nat idx in
   if Nat.eqb idx_nat 0 then (routestartfn 0 (reg 0)) 
   else if Nat.eqb idx_nat regno then (routeendfn regno (reg (Nat.sub regno 1))) 
   else (routecenterfn idx_nat (reg (Nat.sub idx_nat 1)) (reg idx_nat))  
-end.
+end. *)
 
 Definition R ( reg : reg_t ) :=
   match reg with
@@ -65,18 +104,177 @@ Definition r (reg : reg_t) : R reg :=
   |  _ => Bits.zero
   end.
 
-  Fixpoint schedule_gen (n:nat): scheduler:=
+  Definition rules :=
+  tc_rules R empty_Sigma to_action.
+
+
+  
+  
+  Ltac solve_eqdec_t :=
+    repeat match goal with
+    | |- context [EqDec.eq_dec ?x ?x] =>
+      try rewrite eq_dec_refl || native_compute (EqDec.eq_dec x x)
+    | |- context [EqDec.eq_dec ?x ?y] =>
+      native_compute (EqDec.eq_dec x y)
+    end.
+  
+  
+  Ltac tc_action_dependent_t :=
+    cbv zeta;
+    unfold Koika.TypeInference.tc_action;
+    repeat match goal with
+    | _ => progress with_strategy opaque [ EqDec.eq_dec ] cbn
+    | _ => progress solve_eqdec_t
+    | |- context [type_action] => unfold type_action
+    | |- context [cast_action] => unfold cast_action
+    | |- context [cast_action'] => unfold cast_action'
+    end;
+    reflexivity.
+  Check
+    tc_rules R empty_Sigma to_action.
+
+    Lemma xxx R Sigma tau sig rl x:
+    Koika.TypeInference.tc_action 
+      R 
+      Sigma 
+      dummy_pos 
+      tau 
+      sig 
+    (desugar_action dummy_pos (to_action rl)) = Success x.
+  Proof.
+    destruct rl.
+    unfold to_action.
+    unfold Koika.TypeInference.tc_action.
+    (* destruct n. *)
+    - unfold desugar_action.
+    unfold cast_action. unfold cast_action'. unfold routestartfn. unfold _routestart_r.
+    intros.
+    repeat match goal with
+    | _ => progress with_strategy opaque [ EqDec.eq_dec ] cbn
+    | _ => progress solve_eqdec_t
+    | |- context [type_action] => unfold type_action
+    | |- context [cast_action] => unfold cast_action
+    | |- context [cast_action'] => unfold cast_action'
+    end.
+
+  
+
+    Check is_success.
+    Lemma xxx R Sigma tau sig rl:
+    is_success (desugar_and_tc_action
+      R 
+      Sigma 
+      tau 
+      sig 
+     (to_action rl)) = true.
+     Proof.
+     destruct rl.
+     unfold to_action.
+     -  unfold Koika.TypeInference.tc_action. unfold is_success.
+     cbv delta. unfold routetest. unfold _routetest.
+intros. unfold type_action.  unfold cast_action. unfold cast_action'.
+repeat match goal with
+     | _ => progress with_strategy opaque [ EqDec.eq_dec ] cbn
+     | _ => progress solve_eqdec_t
+     | |- context [type_action] => unfold type_action
+     | |- context [cast_action] => unfold cast_action
+     | |- context [cast_action'] => unfold cast_action'
+     end.
+     solve_eqdec_t.
+     apply is_success.
+     reflexivity.
+
+     
+
+  (* Fixpoint schedule_gen (n:nat): scheduler:=
   match n with
   | 0 => done
   | S n' => (router n') |> (schedule_gen n')
   end.
 
   Definition schedule : scheduler := schedule_gen nocsize.
-    (* (router 3) |> (router 2) |> (router 1) |>  (router 0) |> done.  *)
-    Definition rules :=
-        tc_rules R empty_Sigma to_action.
+    (router 3) |> (router 2) |> (router 1) |>  (router 0) |> done.  *)
 
-End Design.
+
+  Check Koika.TypeInference.tc_action.
+  Check Koika.SyntaxFunctions.reposition.
+  Check PThis.
+  Check reposition.
+  Context {var_t fn_name_t reg_t ext_fn_t: Type}.
+(* Lemma mytry R Sigma x:
+tc_rules R sigma to_action = x. *)
+  (* Lemma m2 R Sigma sig tau rl x:
+  Koika.TypeInference.tc_action 
+  R 
+  Sigma 
+  dummy_pos 
+  tau 
+  sig 
+ (desugar_action dummy_pos (reposition PThis (to_action rl))) 
+   = Success x.
+   Proof.
+   destruct rl.
+   unfold to_action.
+   destruct n.
+   - simpl. unfold desugar_action. unfold Koika.TypeInference.tc_action.
+   unfold cast_action. unfold cast_action'. unfold reposition. *)
+
+
+(* Check r.
+
+  Lemma xxx R Sigma tau sig rl x:
+    Koika.TypeInference.tc_action 
+      R 
+      Sigma 
+      dummy_pos 
+      tau 
+      sig 
+    (desugar_action dummy_pos (to_action rl)) = Success x.
+  Proof.
+    destruct rl.
+    unfold to_action.
+    unfold Koika.TypeInference.tc_action.
+    (* destruct n. *)
+    - unfold desugar_action.
+    unfold cast_action. unfold cast_action'. unfold routestartfn. unfold _routestart_r.
+    intros.
+    repeat match goal with
+    | _ => progress with_strategy opaque [ EqDec.eq_dec ] cbn
+    | _ => progress solve_eqdec_t
+    | |- context [type_action] => unfold type_action
+    | |- context [cast_action] => unfold cast_action
+    | |- context [cast_action'] => unfold cast_action'
+    end.
+
+
+ *)
+
+ Ltac _arg_type R :=
+  match type of R with
+  | ?t -> _ => t
+  end.
+
+ Goal. 
+ Proof.
+  let rule_name_t := _arg_type uactions in
+  let res := constr:(fun r: rule_name_t =>
+                      ltac:(destruct r eqn:? ;
+                            lazymatch goal with
+                            | [ H: _ = ?rr |- _ ] =>
+                              (* FIXME: why does the ‘<:’ above need this hnf? *)
+                              let ua := constr:(uactions rr) in
+                              let ua := (eval hnf in ua) in
+                              _tc_action R Sigma (@List.nil (var_t * type)) constr:(unit_t) ua
+                            end)) in
+  exact res.
+
+Notation tc_rules R Sigma actions :=
+  (ltac:(_tc_rules R Sigma actions)) (only parsing).
+
+Definition rules := 
+
+(* End Design. Cant end functor instance?  *)
+
 Module Proofs.
 Import Design.
 
@@ -135,5 +333,8 @@ Bits.to_nat bits_r0 = 9313)).
   Proof.
     check.
   Defined.
+
+Lemma left_to_right: forall nocsize
+
 
 End Proofs.
