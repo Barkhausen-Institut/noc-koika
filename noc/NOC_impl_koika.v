@@ -35,21 +35,22 @@ End MyRegs.
 Print rule_name_t.
 Module Routerfns:= Router(MyRegs).        
 Import Routerfns.
-Check thisone.
 (*
 Module Routerfns:= Router(MyRegs).        
 Import Routerfns. 
 *)
 
-Definition _routetest (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg_t empty_ext_fn_t) 
+Definition _routetest (r0_send r0_receive: UInternalFunction reg_t empty_ext_fn_t) 
 : uaction reg_t empty_ext_fn_t :=
-UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
 {{
     let m0 := r0_receive() in (*router input policy will be added here*)
     r0_send(m0)
 }}.
+
+Compute _routetest.
+Print USugar.
   
-Definition routetest (n: nat) (reg : reg_t):= _routetest n (r_send reg) (r_receive reg).
+Definition routetest (reg : reg_t):= _routetest (r_send reg) (r_receive reg).
 (* Definition to_action rl :=
   match rl with
   | route0_r => _routestart_r Ob~0~0~0~0 (r_send r0) (r_receive r0)
@@ -59,7 +60,7 @@ Definition routetest (n: nat) (reg : reg_t):= _routetest n (r_send reg) (r_recei
   end. *)
 
   Equations to_action (rl:rule_name_t) : uaction reg_t empty_ext_fn_t :=
-  to_action route0_r  := routetest 0 (reg_ (thisone));
+  to_action route0_r  := routestartfn 0 (reg_ (thisone));
   to_action route1_r := routecenterfn 1 (reg_ (thisone)) (reg_ (anotherone thisone));
   to_action route2_r := routecenterfn 2 (reg_ (anotherone thisone)) (reg_ (anotherone (anotherone thisone)));
   to_action route3_r := routeendfn 3 (reg_ (anotherone (anotherone thisone))).
@@ -113,9 +114,9 @@ Definition r (reg : reg_t) : R reg :=
   Ltac solve_eqdec_t :=
     repeat match goal with
     | |- context [EqDec.eq_dec ?x ?x] =>
-      try rewrite eq_dec_refl || native_compute (EqDec.eq_dec x x)
+      try rewrite eq_dec_refl || vm_compute (EqDec.eq_dec x x)
     | |- context [EqDec.eq_dec ?x ?y] =>
-      native_compute (EqDec.eq_dec x y)
+      vm_compute (EqDec.eq_dec x y)
     end.
   
   
@@ -130,13 +131,79 @@ Definition r (reg : reg_t) : R reg :=
     | |- context [cast_action'] => unfold cast_action'
     end;
     reflexivity.
-  Check
-    tc_rules R empty_Sigma to_action.
+  (* Compute
+    tc_rules R empty_Sigma to_action. *)
 
-    Lemma xxx R Sigma tau sig rl x:
+    From Coq Require Import ssreflect ssrfun ssrbool.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+(*
+    Instance reg_t_eq_dec : EqDec reg_t. 
+    Proof.
+      exact (eq_dec eq_refl).
+    := @EqDec_FiniteType _ _.
+    Print Instances EqDec.
+*)
+
+Notation "` x" := (projT1 x) (at level 0).
+Notation "`` x" := (projT2 x) (at level 0).
+
+Check type_action.
+ 
+Lemma ubind x e dummy_pos b R Sigma e' b':
+     e' = type_action R Sigma dummy_pos (@List.nil (var_t * type)) e ->
+     b' = type_action R Sigma dummy_pos ((x, `e') :: (@List.nil (var_t * type))) b ->
+     type_action R Sigma dummy_pos (@List.nil (var_t * type)) (UBind x e b) = Bind x ``e' ``b'.
+    Proof.
+    Admitted.
+
+    Lemma xxx :
+    forall  Sigma rl,
+    { x | TypeInference.tc_action R Sigma dummy_pos (@List.nil (var_t * type)) unit_t
+    (desugar_action dummy_pos (to_action rl)) = Success x }.
+    destruct rl.
+    - intros.
+      eexists.
+      rewrite /to_action/routestartfn/_routestart_r.
+      rewrite /desugar_action/desugar_action' -/desugar_action'.
+      rewrite /TypeInference.tc_action.
+      Check UBind. 
+      remember (@UBind dummy_pos _ _ _ _ "m0" _ _).
+      rewrite /type_action -/type_action. rewrite /=.
+      rewrite /cast_action. rewrite /cast_action' -/cast_action'.
+      rewrite /eq_dec.
+      rewrite /=.
+      reflexivity.
+progress solve_eqdec_t.
+(* progress with_strategy opaque [ EqDec.eq_dec ] cbn. *)
+progress solve_eqdec_t.
+unfold type_action.
+unfold cast_action.
+unfold cast_action'.
+      unfold type_action.
+      unfold cast_action at 1.
+      unfold cast_action'.
+      with_strategy opaque [ EqDec.eq_dec ] cbn.
+      solve_eqdec_t.
+      unfold cast_action at 1.
+      unfold cast_action'.
+      progress with_strategy opaque [ EqDec.eq_dec ] cbn.
+      progress solve_eqdec_t.
+      vm_compute.
+      repeat match goal with
+      | _ => progress with_strategy opaque [ EqDec.eq_dec ] cbn
+      | _ => progress solve_eqdec_t
+      | |- context [type_action] => unfold type_action
+      | |- context [cast_action] => unfold cast_action
+      | |- context [cast_action'] => unfold cast_action'
+      end.
+
+    Lemma xxx R tau sig rl x:
     Koika.TypeInference.tc_action 
       R 
-      Sigma 
+      empty_Sigma 
       dummy_pos 
       tau 
       sig 
@@ -145,9 +212,10 @@ Definition r (reg : reg_t) : R reg :=
     destruct rl.
     unfold to_action.
     unfold Koika.TypeInference.tc_action.
-    (* destruct n. *)
-    - unfold desugar_action.
-    unfold cast_action. unfold cast_action'. unfold routestartfn. unfold _routestart_r.
+    -unfold type_action.
+    vm_compute.
+    Print e.
+    cast_action. unfold cast_action'. unfold routestartfn. unfold _routestart_r.
     intros.
     repeat match goal with
     | _ => progress with_strategy opaque [ EqDec.eq_dec ] cbn
