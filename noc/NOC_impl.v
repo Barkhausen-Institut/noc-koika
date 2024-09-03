@@ -245,7 +245,7 @@ End NOCSyntax.
 
 
 Module MyNOCSize <: NOC_data.
-  Definition nocsize := 4.  
+  Definition nocsize := 100.  
 End MyNOCSize.
 
 Module NOCImpl. 
@@ -262,6 +262,8 @@ MetaCoq Run (
 ).
 
 Print reg_t.
+Print rule_name_t.
+
 Module MyRegs <: Registers.
 Definition reg_t:=reg_t.
 End MyRegs.
@@ -285,7 +287,6 @@ MetaCoq Run ( tmMkDefinition "schedule"%bs scheduler_synatx).
 Definition rules :=
   tc_rules R empty_Sigma to_action.
 
-Print rule_name_t.
 End NOCImpl.
 
 Module Proofs.
@@ -314,16 +315,16 @@ Lemma router2:
   Definition r2testback (reg : reg_t) : R reg :=
     match reg with
     |  r1 => Bits.zero
-    |  r2 => Bits.of_nat 14 9249 
+    |  r2 => Bits.of_nat 14 9217 
     |  r3 => Bits.zero
     end.
   
   
-  Lemma router2:
-      run_action r2test(rules router_2)
+  Lemma router2back:
+      run_action r2testback(rules router_2)
       (fun ctxt =>
-        let bits_r2 := ctxt.[r2] in
-        Bits.to_nat bits_r2 = 8769
+        let bits_r1 := ctxt.[r1] in
+        Bits.to_nat bits_r1 = 8705
       ).
     Proof.
       check.
