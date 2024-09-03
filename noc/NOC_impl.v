@@ -285,10 +285,49 @@ MetaCoq Run ( tmMkDefinition "schedule"%bs scheduler_synatx).
 Definition rules :=
   tc_rules R empty_Sigma to_action.
 
+Print rule_name_t.
 End NOCImpl.
 
 Module Proofs.
 Import NOCImpl.
+
+(*8809 -> 10001001101001*)
+
+Definition r2test (reg : reg_t) : R reg :=
+  match reg with
+  |  r1 => Bits.of_nat 14 8257 
+  |  r2 => Bits.zero
+  |  r3 => Bits.zero
+  end.
+
+
+Lemma router2:
+    run_action r2test(rules router_2)
+    (fun ctxt =>
+      let bits_r2 := ctxt.[r2] in
+      Bits.to_nat bits_r2 = 8769
+    ).
+  Proof.
+    check.
+  Defined.
+
+  Definition r2testback (reg : reg_t) : R reg :=
+    match reg with
+    |  r1 => Bits.zero
+    |  r2 => Bits.of_nat 14 9249 
+    |  r3 => Bits.zero
+    end.
+  
+  
+  Lemma router2:
+      run_action r2test(rules router_2)
+      (fun ctxt =>
+        let bits_r2 := ctxt.[r2] in
+        Bits.to_nat bits_r2 = 8769
+      ).
+    Proof.
+      check.
+    Defined.
 
 Definition r_r2l (reg : reg_t) : R reg :=
   match reg with
