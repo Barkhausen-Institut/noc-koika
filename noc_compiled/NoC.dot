@@ -1,0 +1,536 @@
+digraph NoC {
+N1 [label="<hd> r1", shape="record"]
+N1:hd -> N307:f0
+N307 [label="<hd> ptr (var_m0)|<f0> .", shape="record"]
+N307:hd -> N329:f0
+N329 [label="<hd> slice (var_src_p)|<f0> .", shape="record"]
+N329:hd -> N330:f0
+N330 [label="<hd> eqbits|<f0> .|<f1> 4'b0", shape="record"]
+N330:hd -> N332:f0
+N307:hd -> N325:f0
+N325 [label="<hd> slice (var_new_data)|<f0> .", shape="record"]
+N325:hd -> N332:f1
+N332 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N332:hd -> N375:f0
+N307:hd -> N319:f0
+N319 [label="<hd> slice|<f0> .", shape="record"]
+N319:hd -> N322:f0
+N322 [label="<hd> compare|<f0> .|<f1> 2'b0", shape="record"]
+N322:hd -> N370:f0
+N319:hd -> N366:f0
+N366 [label="<hd> compare|<f0> .|<f1> 2'b0", shape="record"]
+N366:hd -> N368:f0
+N368 [label="<hd> not|<f0> .", shape="record"]
+N368:hd -> N370:f1
+N370 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N370:hd -> N375:f1
+N375 [label="<hd> mux|<f0> .|<f1> .|<f2> 1'b1", shape="record"]
+N375:hd -> N378:f0
+N52 [label="<hd> r2", shape="record"]
+N52:hd -> N55:f0
+N55 [label="<hd> ptr (var_m1)|<f0> .", shape="record"]
+N55:hd -> N85:f0
+N85 [label="<hd> slice (var_src_p)|<f0> .", shape="record"]
+N85:hd -> N86:f0
+N86 [label="<hd> eqbits|<f0> .|<f1> 4'b0001", shape="record"]
+N86:hd -> N88:f0
+N55:hd -> N81:f0
+N81 [label="<hd> slice (var_new_data)|<f0> .", shape="record"]
+N81:hd -> N88:f1
+N88 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N88:hd -> N300:f0
+N55:hd -> N68:f0
+N68 [label="<hd> slice|<f0> .", shape="record"]
+N68:hd -> N76:f0
+N76 [label="<hd> compare|<f0> .|<f1> 2'b01", shape="record"]
+N76:hd -> N296:f0
+N68:hd -> N71:f0
+N71 [label="<hd> compare|<f0> .|<f1> 2'b01", shape="record"]
+N71:hd -> N292:f0
+N1:hd -> N11:f0
+N11 [label="<hd> ptr (var_m0)|<f0> .", shape="record"]
+N11:hd -> N46:f0
+N46 [label="<hd> slice (var_src_p)|<f0> .", shape="record"]
+N46:hd -> N47:f0
+N47 [label="<hd> eqbits|<f0> .|<f1> 4'b0001", shape="record"]
+N47:hd -> N49:f0
+N11:hd -> N42:f0
+N42 [label="<hd> slice (var_new_data)|<f0> .", shape="record"]
+N42:hd -> N49:f1
+N49 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N49:hd -> N277:f0
+N11:hd -> N28:f0
+N28 [label="<hd> slice|<f0> .", shape="record"]
+N28:hd -> N36:f0
+N36 [label="<hd> compare|<f0> .|<f1> 2'b01", shape="record"]
+N36:hd -> N275:f0
+N28:hd -> N31:f0
+N31 [label="<hd> compare|<f0> .|<f1> 2'b01", shape="record"]
+N31:hd -> N273:f0
+N273 [label="<hd> not|<f0> .", shape="record"]
+N273:hd -> N275:f1
+N275 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N275:hd -> N277:f1
+N277 [label="<hd> mux|<f0> .|<f1> .|<f2> 1'b1", shape="record"]
+N277:hd -> N283:f0
+N49:hd -> N256:f0
+N36:hd -> N256:f1
+N256 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N256:hd -> N281:f0
+N281 [label="<hd> not|<f0> .", shape="record"]
+N281:hd -> N283:f1
+N283 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N283:hd -> N290:f0
+N49:hd -> N288:f0
+N288 [label="<hd> not|<f0> .", shape="record"]
+N288:hd -> N290:f1
+N290 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N290:hd -> N292:f1
+N283:hd -> N292:f2
+N292 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N292:hd -> N296:f2
+N296 [label="<hd> mux|<f0> .|<f1> 1'b0|<f2> .", shape="record"]
+N296:hd -> N300:f1
+N277:hd -> N300:f2
+N300 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N300:hd -> N304:f0
+N107 [label="<hd> r3", shape="record"]
+N107:hd -> N110:f0
+N110 [label="<hd> ptr (var_m1)|<f0> .", shape="record"]
+N110:hd -> N131:f0
+N131 [label="<hd> slice (var_src_p)|<f0> .", shape="record"]
+N131:hd -> N132:f0
+N132 [label="<hd> eqbits|<f0> .|<f1> 4'b0010", shape="record"]
+N132:hd -> N134:f0
+N110:hd -> N125:f0
+N125 [label="<hd> slice (var_new_data)|<f0> .", shape="record"]
+N125:hd -> N134:f1
+N134 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N134:hd -> N242:f0
+N110:hd -> N112:f0
+N112 [label="<hd> slice|<f0> .", shape="record"]
+N112:hd -> N121:f0
+N121 [label="<hd> compare|<f0> .|<f1> 2'b10", shape="record"]
+N121:hd -> N239:f0
+N112:hd -> N115:f0
+N115 [label="<hd> compare|<f0> .|<f1> 2'b10", shape="record"]
+N115:hd -> N235:f0
+N52:hd -> N92:f0
+N92 [label="<hd> ptr (var_m0)|<f0> .", shape="record"]
+N92:hd -> N100:f0
+N100 [label="<hd> slice (var_src_p)|<f0> .", shape="record"]
+N100:hd -> N101:f0
+N101 [label="<hd> eqbits|<f0> .|<f1> 4'b0010", shape="record"]
+N101:hd -> N103:f0
+N92:hd -> N95:f0
+N95 [label="<hd> slice (var_new_data)|<f0> .", shape="record"]
+N95:hd -> N103:f1
+N103 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N103:hd -> N221:f0
+N92:hd -> N190:f0
+N190 [label="<hd> slice|<f0> .", shape="record"]
+N190:hd -> N193:f0
+N193 [label="<hd> compare|<f0> .|<f1> 2'b10", shape="record"]
+N193:hd -> N219:f0
+N190:hd -> N215:f0
+N215 [label="<hd> compare|<f0> .|<f1> 2'b10", shape="record"]
+N215:hd -> N217:f0
+N217 [label="<hd> not|<f0> .", shape="record"]
+N217:hd -> N219:f1
+N219 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N219:hd -> N221:f1
+N221 [label="<hd> mux|<f0> .|<f1> .|<f2> 1'b1", shape="record"]
+N221:hd -> N227:f0
+N103:hd -> N196:f0
+N193:hd -> N196:f1
+N196 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N196:hd -> N225:f0
+N225 [label="<hd> not|<f0> .", shape="record"]
+N225:hd -> N227:f1
+N227 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N227:hd -> N233:f0
+N103:hd -> N231:f0
+N231 [label="<hd> not|<f0> .", shape="record"]
+N231:hd -> N233:f1
+N233 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N233:hd -> N235:f1
+N227:hd -> N235:f2
+N235 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N235:hd -> N239:f2
+N239 [label="<hd> mux|<f0> .|<f1> 1'b0|<f2> .", shape="record"]
+N239:hd -> N242:f1
+N221:hd -> N242:f2
+N242 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N242:hd -> N247:f0
+N107:hd -> N141:f0
+N141 [label="<hd> ptr (var_m0)|<f0> .", shape="record"]
+N141:hd -> N163:f0
+N163 [label="<hd> slice (var_src_p)|<f0> .", shape="record"]
+N163:hd -> N164:f0
+N164 [label="<hd> eqbits|<f0> .|<f1> 4'b0011", shape="record"]
+N164:hd -> N166:f0
+N141:hd -> N158:f0
+N158 [label="<hd> slice (var_new_data)|<f0> .", shape="record"]
+N158:hd -> N166:f1
+N166 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N166:hd -> N180:f0
+N141:hd -> N143:f0
+N143 [label="<hd> slice|<f0> .", shape="record"]
+N143:hd -> N153:f0
+N153 [label="<hd> compare|<f0> .|<f1> 2'b11", shape="record"]
+N153:hd -> N173:f0
+N173 [label="<hd> not|<f0> .", shape="record"]
+N173:hd -> N180:f1
+N180 [label="<hd> mux|<f0> .|<f1> .|<f2> 1'b1", shape="record"]
+N180:hd -> N182:f0
+N166:hd -> N169:f0
+N153:hd -> N155:f0
+N143:hd -> N146:f0
+N146 [label="<hd> compare|<f0> .|<f1> 2'b11", shape="record"]
+N146:hd -> N155:f2
+N155 [label="<hd> mux|<f0> .|<f1> 1'b0|<f2> .", shape="record"]
+N155:hd -> N169:f1
+N169 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N169:hd -> N182:f1
+N182 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N182:hd -> N206:f0
+N206 [label="<hd> not|<f0> .", shape="record"]
+N206:hd -> N209:f0
+N134:hd -> N198:f0
+N196:hd -> N198:f1
+N198 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N198:hd -> N200:f0
+N200 [label="<hd> not|<f0> .", shape="record"]
+N200:hd -> N202:f0
+N182:hd -> N186:f0
+N186 [label="<hd> not|<f0> .", shape="record"]
+N186:hd -> N202:f1
+N202 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N202:hd -> N209:f1
+N209 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N209:hd -> N247:f1
+N247 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N247:hd -> N249:f0
+N134:hd -> N135:f0
+N121:hd -> N122:f0
+N122 [label="<hd> not|<f0> .", shape="record"]
+N122:hd -> N135:f1
+N135 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N135:hd -> N138:f0
+N115:hd -> N117:f0
+N103:hd -> N117:f1
+N117 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N117:hd -> N138:f1
+N103:hd -> N138:f2
+N138 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N138:hd -> N249:f1
+N249 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N249:hd -> N266:f0
+N266 [label="<hd> not|<f0> .", shape="record"]
+N266:hd -> N269:f0
+N88:hd -> N258:f0
+N256:hd -> N258:f1
+N258 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N258:hd -> N260:f0
+N260 [label="<hd> not|<f0> .", shape="record"]
+N260:hd -> N262:f0
+N249:hd -> N253:f0
+N253 [label="<hd> not|<f0> .", shape="record"]
+N253:hd -> N262:f1
+N262 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N262:hd -> N269:f1
+N269 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N269:hd -> N304:f1
+N304 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N304:hd -> N342:f0
+N88:hd -> N337:f0
+N76:hd -> N336:f0
+N336 [label="<hd> not|<f0> .", shape="record"]
+N336:hd -> N337:f1
+N337 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N337:hd -> N340:f0
+N71:hd -> N335:f0
+N49:hd -> N335:f1
+N335 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N335:hd -> N340:f1
+N49:hd -> N340:f2
+N340 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N340:hd -> N342:f1
+N342 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N342:hd -> N357:f0
+N357 [label="<hd> not|<f0> .", shape="record"]
+N357:hd -> N360:f0
+N332:hd -> N349:f0
+N322:hd -> N349:f1
+N349 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N349:hd -> N351:f0
+N351 [label="<hd> not|<f0> .", shape="record"]
+N351:hd -> N353:f0
+N342:hd -> N346:f0
+N346 [label="<hd> not|<f0> .", shape="record"]
+N346:hd -> N353:f1
+N353 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N353:hd -> N360:f1
+N360 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N360:hd -> N378:f1
+N378 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N378:hd -> N379:f0
+N332:hd -> N333:f0
+N322:hd -> N333:f1
+N333 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N333:hd -> N379:f1
+N379 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N379:hd -> N382:f0
+N307:hd -> N308:f0
+N308 [label="<hd> ptr (var_msg)|<f0> .", shape="record"]
+N308:hd -> N312:f0
+N312 [label="<hd> slice|<f0> .", shape="record"]
+N312:hd -> N313:f0
+N313 [label="<hd> concat|<f0> .|<f1> 4'b0", shape="record"]
+N313:hd -> N315:f0
+N308:hd -> N309:f0
+N309 [label="<hd> slice|<f0> .", shape="record"]
+N309:hd -> N315:f1
+N315 [label="<hd> concat (var_value)|<f0> .|<f1> .", shape="record"]
+N315:hd -> N382:f1
+N304:hd -> N306:f0
+N88:hd -> N89:f0
+N76:hd -> N77:f0
+N71:hd -> N72:f0
+N72 [label="<hd> not|<f0> .", shape="record"]
+N72:hd -> N77:f1
+N77 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N77:hd -> N78:f0
+N78 [label="<hd> not|<f0> .", shape="record"]
+N78:hd -> N89:f1
+N89 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N89:hd -> N91:f0
+N55:hd -> N56:f0
+N56 [label="<hd> ptr (var_msg1)|<f0> .", shape="record"]
+N56:hd -> N61:f0
+N61 [label="<hd> slice|<f0> .", shape="record"]
+N61:hd -> N62:f0
+N62 [label="<hd> concat|<f0> .|<f1> 4'b0001", shape="record"]
+N62:hd -> N64:f0
+N56:hd -> N57:f0
+N57 [label="<hd> slice|<f0> .", shape="record"]
+N57:hd -> N64:f1
+N64 [label="<hd> concat (var_value)|<f0> .|<f1> .", shape="record"]
+N64:hd -> N91:f1
+N49:hd -> N51:f0
+N36:hd -> N37:f0
+N31:hd -> N32:f0
+N32 [label="<hd> not|<f0> .", shape="record"]
+N32:hd -> N37:f1
+N37 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N37:hd -> N39:f0
+N11:hd -> N21:f0
+N21 [label="<hd> slice|<f0> .", shape="record"]
+N21:hd -> N24:f1
+N24 [label="<hd> concat (var_value)|<f0> 1'b0|<f1> .", shape="record"]
+N24:hd -> N39:f1
+N11:hd -> N12:f0
+N12 [label="<hd> ptr (var_msg)|<f0> .", shape="record"]
+N12:hd -> N16:f0
+N16 [label="<hd> slice|<f0> .", shape="record"]
+N16:hd -> N17:f0
+N17 [label="<hd> concat|<f0> .|<f1> 4'b0001", shape="record"]
+N17:hd -> N19:f0
+N12:hd -> N13:f0
+N13 [label="<hd> slice|<f0> .", shape="record"]
+N13:hd -> N19:f1
+N19 [label="<hd> concat (var_value)|<f0> .|<f1> .", shape="record"]
+N19:hd -> N39:f2
+N39 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N39:hd -> N51:f1
+N1:hd -> N51:f2
+N51 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N51:hd -> N91:f2
+N91 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N91:hd -> N306:f1
+N1:hd -> N306:f2
+N306 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N306:hd -> N382:f2
+N382 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N382:hd -> r1:f0
+r1 [label="<hd> r1|<f0> .", shape="record"]
+N304:hd -> N452:f0
+N88:hd -> N446:f0
+N76:hd -> N444:f0
+N55:hd -> N436:f0
+N436 [label="<hd> ptr (var_msg1)|<f0> .", shape="record"]
+N436:hd -> N439:f0
+N439 [label="<hd> slice|<f0> .", shape="record"]
+N439:hd -> N440:f0
+N440 [label="<hd> concat|<f0> .|<f1> 4'b0001", shape="record"]
+N440:hd -> N442:f0
+N436:hd -> N437:f0
+N437 [label="<hd> slice|<f0> .", shape="record"]
+N437:hd -> N442:f1
+N442 [label="<hd> concat (var_value)|<f0> .|<f1> .", shape="record"]
+N442:hd -> N444:f1
+N55:hd -> N431:f0
+N431 [label="<hd> slice|<f0> .", shape="record"]
+N431:hd -> N435:f1
+N435 [label="<hd> concat (var_value)|<f0> 1'b0|<f1> .", shape="record"]
+N435:hd -> N444:f2
+N444 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N444:hd -> N446:f1
+N49:hd -> N427:f0
+N36:hd -> N427:f1
+N427 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N427:hd -> N429:f0
+N11:hd -> N420:f0
+N420 [label="<hd> ptr (var_msg)|<f0> .", shape="record"]
+N420:hd -> N423:f0
+N423 [label="<hd> slice|<f0> .", shape="record"]
+N423:hd -> N424:f0
+N424 [label="<hd> concat|<f0> .|<f1> 4'b0001", shape="record"]
+N424:hd -> N426:f0
+N420:hd -> N421:f0
+N421 [label="<hd> slice|<f0> .", shape="record"]
+N421:hd -> N426:f1
+N426 [label="<hd> concat (var_value)|<f0> .|<f1> .", shape="record"]
+N426:hd -> N429:f1
+N247:hd -> N419:f0
+N134:hd -> N415:f0
+N121:hd -> N413:f0
+N115:hd -> N412:f0
+N412 [label="<hd> not|<f0> .", shape="record"]
+N412:hd -> N413:f1
+N413 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N413:hd -> N414:f0
+N414 [label="<hd> not|<f0> .", shape="record"]
+N414:hd -> N415:f1
+N415 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N415:hd -> N417:f0
+N110:hd -> N405:f0
+N405 [label="<hd> ptr (var_msg1)|<f0> .", shape="record"]
+N405:hd -> N408:f0
+N408 [label="<hd> slice|<f0> .", shape="record"]
+N408:hd -> N409:f0
+N409 [label="<hd> concat|<f0> .|<f1> 4'b0010", shape="record"]
+N409:hd -> N411:f0
+N405:hd -> N406:f0
+N406 [label="<hd> slice|<f0> .", shape="record"]
+N406:hd -> N411:f1
+N411 [label="<hd> concat (var_value)|<f0> .|<f1> .", shape="record"]
+N411:hd -> N417:f1
+N103:hd -> N404:f0
+N193:hd -> N400:f0
+N215:hd -> N399:f0
+N399 [label="<hd> not|<f0> .", shape="record"]
+N399:hd -> N400:f1
+N400 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N400:hd -> N402:f0
+N92:hd -> N395:f0
+N395 [label="<hd> slice|<f0> .", shape="record"]
+N395:hd -> N398:f1
+N398 [label="<hd> concat (var_value)|<f0> 1'b0|<f1> .", shape="record"]
+N398:hd -> N402:f1
+N92:hd -> N387:f0
+N387 [label="<hd> ptr (var_msg)|<f0> .", shape="record"]
+N387:hd -> N390:f0
+N390 [label="<hd> slice|<f0> .", shape="record"]
+N390:hd -> N391:f0
+N391 [label="<hd> concat|<f0> .|<f1> 4'b0010", shape="record"]
+N391:hd -> N393:f0
+N387:hd -> N388:f0
+N388 [label="<hd> slice|<f0> .", shape="record"]
+N388:hd -> N393:f1
+N393 [label="<hd> concat (var_value)|<f0> .|<f1> .", shape="record"]
+N393:hd -> N402:f2
+N402 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N402:hd -> N404:f1
+N52:hd -> N404:f2
+N404 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N404:hd -> N417:f2
+N417 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N417:hd -> N419:f1
+N52:hd -> N419:f2
+N419 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N419:hd -> N429:f2
+N429 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N429:hd -> N446:f2
+N446 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N446:hd -> N452:f1
+N419:hd -> N452:f2
+N452 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N452:hd -> r2:f0
+r2 [label="<hd> r2|<f0> .", shape="record"]
+N247:hd -> N505:f0
+N134:hd -> N494:f0
+N121:hd -> N492:f0
+N110:hd -> N484:f0
+N484 [label="<hd> ptr (var_msg1)|<f0> .", shape="record"]
+N484:hd -> N487:f0
+N487 [label="<hd> slice|<f0> .", shape="record"]
+N487:hd -> N488:f0
+N488 [label="<hd> concat|<f0> .|<f1> 4'b0010", shape="record"]
+N488:hd -> N490:f0
+N484:hd -> N485:f0
+N485 [label="<hd> slice|<f0> .", shape="record"]
+N485:hd -> N490:f1
+N490 [label="<hd> concat (var_value)|<f0> .|<f1> .", shape="record"]
+N490:hd -> N492:f1
+N110:hd -> N479:f0
+N479 [label="<hd> slice|<f0> .", shape="record"]
+N479:hd -> N483:f1
+N483 [label="<hd> concat (var_value)|<f0> 1'b0|<f1> .", shape="record"]
+N483:hd -> N492:f2
+N492 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N492:hd -> N494:f1
+N103:hd -> N475:f0
+N193:hd -> N475:f1
+N475 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N475:hd -> N477:f0
+N92:hd -> N468:f0
+N468 [label="<hd> ptr (var_msg)|<f0> .", shape="record"]
+N468:hd -> N471:f0
+N471 [label="<hd> slice|<f0> .", shape="record"]
+N471:hd -> N472:f0
+N472 [label="<hd> concat|<f0> .|<f1> 4'b0010", shape="record"]
+N472:hd -> N474:f0
+N468:hd -> N469:f0
+N469 [label="<hd> slice|<f0> .", shape="record"]
+N469:hd -> N474:f1
+N474 [label="<hd> concat (var_value)|<f0> .|<f1> .", shape="record"]
+N474:hd -> N477:f1
+N180:hd -> N465:f0
+N166:hd -> N464:f0
+N153:hd -> N462:f0
+N146:hd -> N461:f0
+N461 [label="<hd> not|<f0> .", shape="record"]
+N461:hd -> N462:f1
+N462 [label="<hd> or|<f0> .|<f1> .", shape="record"]
+N462:hd -> N463:f0
+N463 [label="<hd> not|<f0> .", shape="record"]
+N463:hd -> N464:f1
+N464 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N464:hd -> N465:f1
+N465 [label="<hd> and|<f0> .|<f1> .", shape="record"]
+N465:hd -> N467:f0
+N141:hd -> N454:f0
+N454 [label="<hd> ptr (var_msg)|<f0> .", shape="record"]
+N454:hd -> N457:f0
+N457 [label="<hd> slice|<f0> .", shape="record"]
+N457:hd -> N458:f0
+N458 [label="<hd> concat|<f0> .|<f1> 4'b0011", shape="record"]
+N458:hd -> N460:f0
+N454:hd -> N455:f0
+N455 [label="<hd> slice|<f0> .", shape="record"]
+N455:hd -> N460:f1
+N460 [label="<hd> concat (var_value)|<f0> .|<f1> .", shape="record"]
+N460:hd -> N467:f1
+N107:hd -> N467:f2
+N467 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N467:hd -> N477:f2
+N477 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N477:hd -> N494:f2
+N494 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N494:hd -> N505:f1
+N467:hd -> N505:f2
+N505 [label="<hd> mux|<f0> .|<f1> .|<f2> .", shape="record"]
+N505:hd -> r3:f0
+r3 [label="<hd> r3|<f0> .", shape="record"]
+}
