@@ -240,12 +240,13 @@ Fixpoint generate_scheduler (n: nat) : term :=
 
 Definition scheduler_synatx := Eval compute in (generate_scheduler nocsize).
 
+
 End NOCSyntax.
 
 
 
 Module MyNOCSize <: NOC_data.
-  Definition nocsize := 100.  
+  Definition nocsize := 4.  
 End MyNOCSize.
 
 Module NOCImpl. 
@@ -287,7 +288,39 @@ MetaCoq Run ( tmMkDefinition "schedule"%bs scheduler_synatx).
 Definition rules :=
   tc_rules R empty_Sigma to_action.
 
+  Definition package :=
+    {|
+    ip_koika :=
+    {|
+    koika_reg_types := R;
+    koika_reg_init := r;
+    koika_ext_fn_types := empty_Sigma;
+    koika_rules := rules;
+    koika_rule_external := (fun _ => false);
+    koika_scheduler := schedule;
+    koika_module_name := "NoC"
+    |};
+    ip_sim :=
+    {|
+    sp_ext_fn_specs := empty_ext_fn_props;
+    sp_prelude := None
+    |};
+    ip_verilog :=
+    {|
+    vp_ext_fn_specs := empty_ext_fn_props
+    |}
+    |}.
+(* Definition r_send_r1 := r_send r1. 
+
+Definition tc_r_send := tc_function R empty_Sigma r_send_r1.
+Definition tc_r_receive := tc_function R Sigma r_receive. *)
+
+Definition prog := Interop.Backends.register package.
+Extraction "noc.ml" prog.
+
 End NOCImpl.
+
+
 
 Module Proofs.
 Import NOCImpl.
