@@ -145,11 +145,13 @@ type ('s, 'f) result =
 | Success of 's
 | Failure of 'f
 
-val result_map_failure : ('a2 -> 'a3) -> ('a1, 'a2) result -> ('a1, 'a3) result
+val result_map_failure :
+  ('a2 -> 'a3) -> ('a1, 'a2) result -> ('a1, 'a3) result
 
 val opt_result : 'a1 option -> 'a2 -> ('a1, 'a2) result
 
-val result_list_map : ('a1 -> ('a2, 'a3) result) -> 'a1 list -> ('a2 list, 'a3) result
+val result_list_map :
+  ('a1 -> ('a2, 'a3) result) -> 'a1 list -> ('a2 list, 'a3) result
 
 val extract_success : ('a1, 'a2) result -> 'a1
 
@@ -158,16 +160,19 @@ type 'k member =
 | MemberTl of 'k * 'k * 'k list * 'k member
 
 val assoc :
-  'a1 eqDec -> 'a1 -> ('a1 * 'a2) list -> ('a2, ('a1 * 'a2) member) sigT option
+  'a1 eqDec -> 'a1 -> ('a1 * 'a2) list -> ('a2, ('a1 * 'a2) member) sigT
+  option
 
 val list_assoc : 'a1 eqDec -> 'a1 -> ('a1 * 'a2) list -> index option
 
 val list_nth : 'a1 list -> index -> 'a1
 
-type 'a struct_sig' = { struct_name : char list; struct_fields : (char list * 'a) list }
+type 'a struct_sig' = { struct_name : char list;
+                        struct_fields : (char list * 'a) list }
 
-type enum_sig = { enum_name : char list; enum_size : int; enum_bitsize : int;
-                  enum_members : char list vect; enum_bitpatterns : bool vect vect }
+type enum_sig = { enum_name : char list; enum_size : int; enum_bitsize : 
+                  int; enum_members : char list vect;
+                  enum_bitpatterns : bool vect vect }
 
 type 'a array_sig' = { array_type : 'a; array_len : int }
 
@@ -215,6 +220,10 @@ type type_denote = __
 
 type 'argKind _Sig = { argSigs : 'argKind vect; retSig : 'argKind }
 
+type ('argKind, 'type_of_argKind) _Sig_denote = __
+
+type sig_denote = (type0, type_denote) _Sig_denote
+
 val cSig_of_Sig : int -> type0 _Sig -> int _Sig
 
 val sig_of_CSig : int -> int _Sig -> type0 _Sig
@@ -224,12 +233,15 @@ type externalSignature = type0 _Sig
 type 'var_t tsig = ('var_t * type0) list
 
 type ('var_t, 'fn_name_t, 'action) internalFunction = { int_name : 'fn_name_t;
-                                                        int_argspec : 'var_t tsig;
-                                                        int_retSig : type0;
+                                                        int_argspec : 
+                                                        'var_t tsig;
+                                                        int_retSig : 
+                                                        type0;
                                                         int_body : 'action }
 
 val map_intf_body :
-  ('a3 -> 'a4) -> ('a1, 'a2, 'a3) internalFunction -> ('a1, 'a2, 'a4) internalFunction
+  ('a3 -> 'a4) -> ('a1, 'a2, 'a3) internalFunction -> ('a1, 'a2, 'a4)
+  internalFunction
 
 type 'var_t arg_sig = { arg_name : 'var_t; arg_type : type0 }
 
@@ -262,10 +274,12 @@ type fn_tc_error_loc =
 
 type fn_tc_error = fn_tc_error_loc * basic_error_message
 
-val assert_kind : type_kind -> fn_tc_error_loc -> type0 -> (__, fn_tc_error) result
+val assert_kind :
+  type_kind -> fn_tc_error_loc -> type0 -> (__, fn_tc_error) result
 
 type ('pos_t, 'var_t, 'fn_name_t) error = { epos : 'pos_t;
-                                            emsg : ('var_t, 'fn_name_t) error_message }
+                                            emsg : ('var_t, 'fn_name_t)
+                                                   error_message }
 
 type bits_comparison =
 | CLt
@@ -412,13 +426,16 @@ module PrimTyped :
 
 module PrimTypeInference :
  sig
-  val find_field : type0 struct_sig' -> char list -> (index, fn_tc_error) result
+  val find_field :
+    type0 struct_sig' -> char list -> (index, fn_tc_error) result
 
-  val check_index : type0 array_sig' -> int -> (array_index, fn_tc_error) result
+  val check_index :
+    type0 array_sig' -> int -> (array_index, fn_tc_error) result
 
   val tc1 : PrimUntyped.ufn1 -> type0 -> (PrimTyped.fn1, fn_tc_error) result
 
-  val tc2 : PrimUntyped.ufn2 -> type0 -> type0 -> (PrimTyped.fn2, fn_tc_error) result
+  val tc2 :
+    PrimUntyped.ufn2 -> type0 -> type0 -> (PrimTyped.fn2, fn_tc_error) result
  end
 
 module CircuitSignatures :
@@ -453,11 +470,15 @@ type ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction =
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
 | URead of port * 'reg_t
-| UWrite of port * 'reg_t * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
-| UUnop of PrimUntyped.ufn1 * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
-| UBinop of PrimUntyped.ufn2 * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
+| UWrite of port * 'reg_t
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
-| UExternalCall of 'ext_fn_t * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
+| UUnop of PrimUntyped.ufn1
+   * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
+| UBinop of PrimUntyped.ufn2
+   * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
+   * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
+| UExternalCall of 'ext_fn_t
+   * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
 | UInternalCall of ('var_t, 'fn_name_t, ('pos_t, 'var_t, 'fn_name_t, 'reg_t,
                    'ext_fn_t) uaction) internalFunction
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction list
@@ -470,20 +491,23 @@ and ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) usugar =
 | UConstString of char list
 | UConstEnum of enum_sig * char list
 | UProgn of ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction list
-| ULet of ('var_t * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction) list
-   * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
+| ULet of ('var_t * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction)
+          list * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
 | UWhen of ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
 | USwitch of ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction
-   * (('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction * ('pos_t, 'var_t,
-     'fn_name_t, 'reg_t, 'ext_fn_t) uaction) list
+   * (('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction * ('pos_t,
+     'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction) list
 | UStructInit of type0 struct_sig'
-   * (char list * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction) list
-| UArrayInit of type0 * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction list
+   * (char list * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction)
+     list
+| UArrayInit of type0
+   * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction list
 | UCallModule of (__ -> 'reg_t) * (__, 'ext_fn_t) lift
    * ('var_t, 'fn_name_t, ('pos_t, 'var_t, 'fn_name_t, __, __) uaction)
-     internalFunction * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction list
+     internalFunction
+   * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) uaction list
 
 type ('pos_t, 'rule_name_t) scheduler =
 | Done
@@ -498,12 +522,14 @@ type ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action =
 | Const of 'var_t tsig * type0 * type_denote
 | Assign of ('var_t * type0) list * 'var_t * type0 * ('var_t * type0) member
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
-| Seq of 'var_t tsig * type0 * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
+| Seq of 'var_t tsig * type0
+   * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
 | Bind of 'var_t tsig * type0 * type0 * 'var_t
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
-| If of 'var_t tsig * type0 * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
+| If of 'var_t tsig * type0
+   * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
 | Read of 'var_t tsig * port * 'reg_t
@@ -517,8 +543,8 @@ type ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action =
 | ExternalCall of 'var_t tsig * 'ext_fn_t
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
 | InternalCall of 'var_t tsig * type0 * 'fn_name_t * 'var_t tsig
-   * ('var_t * type0, ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action) context
-   * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
+   * ('var_t * type0, ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action)
+     context * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
 | APos of 'var_t tsig * type0 * 'pos_t
    * ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) action
 
@@ -537,96 +563,101 @@ val uskip : ('a1, 'a2, 'a3, 'a4, 'a5) uaction
 val uinit : type0 -> ('a1, 'a2, 'a3, 'a4, 'a5) uaction
 
 val ustruct_init :
-  type0 struct_sig' -> (char list * ('a1, 'a2, 'a3, 'a4, 'a5) uaction) list -> ('a1,
-  'a2, 'a3, 'a4, 'a5) uaction
+  type0 struct_sig' -> (char list * ('a1, 'a2, 'a3, 'a4, 'a5) uaction) list
+  -> ('a1, 'a2, 'a3, 'a4, 'a5) uaction
 
 val uswitch :
-  ('a1, 'a2, 'a3, 'a4, 'a5) uaction -> ('a1, 'a2, 'a3, 'a4, 'a5) uaction -> (('a1,
-  'a2, 'a3, 'a4, 'a5) uaction * ('a1, 'a2, 'a3, 'a4, 'a5) uaction) list -> ('a1, 'a2,
-  'a3, 'a4, 'a5) uaction
+  ('a1, 'a2, 'a3, 'a4, 'a5) uaction -> ('a1, 'a2, 'a3, 'a4, 'a5) uaction ->
+  (('a1, 'a2, 'a3, 'a4, 'a5) uaction * ('a1, 'a2, 'a3, 'a4, 'a5) uaction)
+  list -> ('a1, 'a2, 'a3, 'a4, 'a5) uaction
 
 val desugar_action' :
-  'a1 -> ('a6 -> 'a4) -> ('a7 -> 'a5) -> ('a1, 'a2, 'a3, 'a6, 'a7) uaction -> ('a1,
-  'a2, 'a3, 'a4, 'a5) uaction
+  'a1 -> ('a6 -> 'a4) -> ('a7 -> 'a5) -> ('a1, 'a2, 'a3, 'a6, 'a7) uaction ->
+  ('a1, 'a2, 'a3, 'a4, 'a5) uaction
 
 val desugar_action :
-  'a1 -> ('a1, 'a2, 'a3, 'a4, 'a5) uaction -> ('a1, 'a2, 'a3, 'a4, 'a5) uaction
+  'a1 -> ('a1, 'a2, 'a3, 'a4, 'a5) uaction -> ('a1, 'a2, 'a3, 'a4, 'a5)
+  uaction
 
 val lift_basic_error_message :
-  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a1 -> 'a2 tsig -> type0 -> ('a1,
-  'a2, 'a3, 'a4, 'a5) action -> basic_error_message -> ('a1, 'a2, 'a3) error
+  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a1 -> 'a2 tsig -> type0 ->
+  ('a1, 'a2, 'a3, 'a4, 'a5) action -> basic_error_message -> ('a1, 'a2, 'a3)
+  error
 
 val lift_fn1_tc_result :
-  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a2 tsig -> type0 -> 'a1 -> ('a1,
-  'a2, 'a3, 'a4, 'a5) action -> ('a6, fn_tc_error) result -> ('a6, ('a1, 'a2, 'a3)
-  error) result
+  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a2 tsig -> type0 -> 'a1 ->
+  ('a1, 'a2, 'a3, 'a4, 'a5) action -> ('a6, fn_tc_error) result -> ('a6,
+  ('a1, 'a2, 'a3) error) result
 
 val lift_fn2_tc_result :
-  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a2 tsig -> type0 -> 'a2 tsig ->
-  type0 -> 'a1 -> ('a1, 'a2, 'a3, 'a4, 'a5) action -> 'a1 -> ('a1, 'a2, 'a3, 'a4, 'a5)
-  action -> ('a6, fn_tc_error) result -> ('a6, ('a1, 'a2, 'a3) error) result
+  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a2 tsig -> type0 -> 'a2
+  tsig -> type0 -> 'a1 -> ('a1, 'a2, 'a3, 'a4, 'a5) action -> 'a1 -> ('a1,
+  'a2, 'a3, 'a4, 'a5) action -> ('a6, fn_tc_error) result -> ('a6, ('a1, 'a2,
+  'a3) error) result
 
 val mkerror : 'a1 -> ('a3, 'a2) error_message -> 'a4 -> ('a1, 'a3, 'a2) error
 
 val cast_action' :
-  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a1 -> 'a3 tsig -> type0 -> type0 ->
-  ('a1, 'a3, 'a2, 'a4, 'a5) action -> ('a3, 'a2) error_message -> (('a1, 'a3, 'a2,
-  'a4, 'a5) action, ('a1, 'a3, 'a2) error) result
+  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a1 -> 'a3 tsig -> type0 ->
+  type0 -> ('a1, 'a3, 'a2, 'a4, 'a5) action -> ('a3, 'a2) error_message ->
+  (('a1, 'a3, 'a2, 'a4, 'a5) action, ('a1, 'a3, 'a2) error) result
 
 val cast_action :
-  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a1 -> 'a3 tsig -> type0 -> type0 ->
-  ('a1, 'a3, 'a2, 'a4, 'a5) action -> (('a1, 'a3, 'a2, 'a4, 'a5) action, ('a1, 'a3,
-  'a2) error) result
+  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a1 -> 'a3 tsig -> type0 ->
+  type0 -> ('a1, 'a3, 'a2, 'a4, 'a5) action -> (('a1, 'a3, 'a2, 'a4, 'a5)
+  action, ('a1, 'a3, 'a2) error) result
 
 val actpos : 'a1 -> ('a1, 'a3, 'a2, 'a4, 'a5) uaction -> 'a1
 
 val assert_argtypes' :
-  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a3 tsig -> 'a6 -> int -> 'a2 -> 'a1
-  -> 'a3 tsig -> ('a1 * (type0, ('a1, 'a3, 'a2, 'a4, 'a5) action) sigT) list ->
-  (('a3 * type0, ('a1, 'a3, 'a2, 'a4, 'a5) action) context, ('a1, 'a3, 'a2) error)
-  result
+  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a3 tsig -> 'a6 -> int ->
+  'a2 -> 'a1 -> 'a3 tsig -> ('a1 * (type0, ('a1, 'a3, 'a2, 'a4, 'a5) action)
+  sigT) list -> (('a3 * type0, ('a1, 'a3, 'a2, 'a4, 'a5) action) context,
+  ('a1, 'a3, 'a2) error) result
 
 val assert_argtypes :
-  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a3 tsig -> 'a6 -> 'a2 -> 'a1 -> 'a3
-  tsig -> ('a1 * (type0, ('a1, 'a3, 'a2, 'a4, 'a5) action) sigT) list ->
-  (('a3 * type0, ('a1, 'a3, 'a2, 'a4, 'a5) action) context, ('a1, 'a3, 'a2) error)
-  result
+  ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a3 tsig -> 'a6 -> 'a2 ->
+  'a1 -> 'a3 tsig -> ('a1 * (type0, ('a1, 'a3, 'a2, 'a4, 'a5) action) sigT)
+  list -> (('a3 * type0, ('a1, 'a3, 'a2, 'a4, 'a5) action) context, ('a1,
+  'a3, 'a2) error) result
 
 val type_action :
-  'a3 eqDec -> ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a1 -> 'a3 tsig ->
-  ('a1, 'a3, 'a2, 'a4, 'a5) uaction -> ((type0, ('a1, 'a3, 'a2, 'a4, 'a5) action)
-  sigT, ('a1, 'a3, 'a2) error) result
+  'a3 eqDec -> ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a1 -> 'a3
+  tsig -> ('a1, 'a3, 'a2, 'a4, 'a5) uaction -> ((type0, ('a1, 'a3, 'a2, 'a4,
+  'a5) action) sigT, ('a1, 'a3, 'a2) error) result
 
 val tc_action :
-  'a3 eqDec -> ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a1 -> 'a3 tsig ->
-  type0 -> ('a1, 'a3, 'a2, 'a4, 'a5) uaction -> (('a1, 'a3, 'a2, 'a4, 'a5) action,
-  ('a1, 'a3, 'a2) error) result
+  'a3 eqDec -> ('a4 -> type0) -> ('a5 -> externalSignature) -> 'a1 -> 'a3
+  tsig -> type0 -> ('a1, 'a3, 'a2, 'a4, 'a5) uaction -> (('a1, 'a3, 'a2, 'a4,
+  'a5) action, ('a1, 'a3, 'a2) error) result
 
 type ext_fn_rtl_spec = { efr_name : char list; efr_internal : bool }
 
 type ext_fn_sim_spec = { efs_name : char list; efs_method : bool }
 
-val empty_Sigma : __ -> externalSignature
-
-val empty_ext_fn_props : __ -> 'a1
-
 type ('pos_t, 'var_t, 'fn_name_t, 'rule_name_t, 'reg_t, 'ext_fn_t) koika_package_t = { 
 koika_var_names : 'var_t show; koika_fn_names : 'fn_name_t show;
 koika_reg_names : 'reg_t show; koika_reg_types : ('reg_t -> type0);
-koika_reg_init : ('reg_t -> type_denote); koika_reg_finite : 'reg_t finiteType;
+koika_reg_init : ('reg_t -> type_denote);
+koika_reg_finite : 'reg_t finiteType;
 koika_ext_fn_types : ('ext_fn_t -> externalSignature);
-koika_rules : ('rule_name_t -> ('pos_t, 'var_t, 'fn_name_t, 'reg_t, 'ext_fn_t) rule);
-koika_rule_external : ('rule_name_t -> bool); koika_rule_names : 'rule_name_t show;
-koika_scheduler : ('pos_t, 'rule_name_t) scheduler; koika_module_name : char list }
+koika_rules : ('rule_name_t -> ('pos_t, 'var_t, 'fn_name_t, 'reg_t,
+              'ext_fn_t) rule); koika_rule_external : ('rule_name_t -> bool);
+koika_rule_names : 'rule_name_t show;
+koika_scheduler : ('pos_t, 'rule_name_t) scheduler;
+koika_module_name : char list }
 
-type 'ext_fn_t verilog_package_t = { vp_ext_fn_specs : ('ext_fn_t -> ext_fn_rtl_spec) }
+type 'ext_fn_t verilog_package_t = { vp_ext_fn_specs : ('ext_fn_t ->
+                                                       ext_fn_rtl_spec) }
 
-type 'ext_fn_t sim_package_t = { sp_ext_fn_specs : ('ext_fn_t -> ext_fn_sim_spec);
+type 'ext_fn_t sim_package_t = { sp_ext_fn_specs : ('ext_fn_t ->
+                                                   ext_fn_sim_spec);
                                  sp_prelude : char list option }
 
-type interop_package_t = { ip_koika : (unit, char list, char list, __, __, __)
-                                      koika_package_t;
-                           ip_verilog : __ verilog_package_t; ip_sim : __ sim_package_t }
+type interop_package_t = { ip_koika : (unit, char list, char list, __, __,
+                                      __) koika_package_t;
+                           ip_verilog : __ verilog_package_t;
+                           ip_sim : __ sim_package_t }
 
 module Backends :
  sig
@@ -660,35 +691,49 @@ module type Registers =
 module Router :
  functor (Regs:Registers) ->
  sig
+  val ext_fn_t_rect : 'a1 -> 'a1
+
+  val ext_fn_t_rec : 'a1 -> 'a1
+
+  val coq_Sigma : __ -> externalSignature
+
+  val fnsigma : __ -> sig_denote
+
+  val to_tile :
+    (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __) uaction)
+    internalFunction
+
   val r_send :
-    Regs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __)
-    uaction) internalFunction
+    Regs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
+    __) uaction) internalFunction
 
   val r_receive :
-    Regs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __)
-    uaction) internalFunction
+    Regs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
+    __) uaction) internalFunction
 
   val _routestart_r :
-    int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __) uaction)
-    internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __)
-    uaction) internalFunction -> (pos_t, var_t, fn_name_t, Regs.reg_t, __) uaction
-
-  val _routecenter_r :
-    int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __) uaction)
-    internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __)
+    int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __)
     uaction) internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
-    Regs.reg_t, __) uaction) internalFunction -> (var_t, fn_name_t, (pos_t, var_t,
-    fn_name_t, Regs.reg_t, __) uaction) internalFunction -> (pos_t, var_t, fn_name_t,
+    Regs.reg_t, __) uaction) internalFunction -> (pos_t, var_t, fn_name_t,
     Regs.reg_t, __) uaction
 
+  val _routecenter_r :
+    int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __)
+    uaction) internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
+    Regs.reg_t, __) uaction) internalFunction -> (var_t, fn_name_t, (pos_t,
+    var_t, fn_name_t, Regs.reg_t, __) uaction) internalFunction -> (var_t,
+    fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __) uaction)
+    internalFunction -> (pos_t, var_t, fn_name_t, Regs.reg_t, __) uaction
+
   val _routeend_r :
-    int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __) uaction)
-    internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __)
-    uaction) internalFunction -> (pos_t, var_t, fn_name_t, Regs.reg_t, __) uaction
+    int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, __)
+    uaction) internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
+    Regs.reg_t, __) uaction) internalFunction -> (pos_t, var_t, fn_name_t,
+    Regs.reg_t, __) uaction
 
   val routecenterfn :
-    int -> Regs.reg_t -> Regs.reg_t -> (pos_t, var_t, fn_name_t, Regs.reg_t, __)
-    uaction
+    int -> Regs.reg_t -> Regs.reg_t -> (pos_t, var_t, fn_name_t, Regs.reg_t,
+    __) uaction
 
   val routestartfn :
     int -> Regs.reg_t -> (pos_t, var_t, fn_name_t, Regs.reg_t, __) uaction
@@ -720,43 +765,58 @@ module NOCImpl :
 
   module Routerfns :
    sig
+    val ext_fn_t_rect : 'a1 -> 'a1
+
+    val ext_fn_t_rec : 'a1 -> 'a1
+
+    val coq_Sigma : __ -> externalSignature
+
+    val fnsigma : __ -> sig_denote
+
+    val to_tile :
+      (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t, __) uaction)
+      internalFunction
+
     val r_send :
-      MyRegs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t, __)
-      uaction) internalFunction
+      MyRegs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
+      MyRegs.reg_t, __) uaction) internalFunction
 
     val r_receive :
-      MyRegs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t, __)
-      uaction) internalFunction
+      MyRegs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
+      MyRegs.reg_t, __) uaction) internalFunction
 
     val _routestart_r :
-      int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t, __) uaction)
-      internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t,
-      __) uaction) internalFunction -> (pos_t, var_t, fn_name_t, MyRegs.reg_t, __)
-      uaction
+      int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t, __)
+      uaction) internalFunction -> (var_t, fn_name_t, (pos_t, var_t,
+      fn_name_t, MyRegs.reg_t, __) uaction) internalFunction -> (pos_t,
+      var_t, fn_name_t, MyRegs.reg_t, __) uaction
 
     val _routecenter_r :
-      int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t, __) uaction)
-      internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t,
-      __) uaction) internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
-      MyRegs.reg_t, __) uaction) internalFunction -> (var_t, fn_name_t, (pos_t, var_t,
-      fn_name_t, MyRegs.reg_t, __) uaction) internalFunction -> (pos_t, var_t,
+      int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t, __)
+      uaction) internalFunction -> (var_t, fn_name_t, (pos_t, var_t,
+      fn_name_t, MyRegs.reg_t, __) uaction) internalFunction -> (var_t,
+      fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t, __) uaction)
+      internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
+      MyRegs.reg_t, __) uaction) internalFunction -> (pos_t, var_t,
       fn_name_t, MyRegs.reg_t, __) uaction
 
     val _routeend_r :
-      int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t, __) uaction)
-      internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t,
-      __) uaction) internalFunction -> (pos_t, var_t, fn_name_t, MyRegs.reg_t, __)
-      uaction
+      int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t, __)
+      uaction) internalFunction -> (var_t, fn_name_t, (pos_t, var_t,
+      fn_name_t, MyRegs.reg_t, __) uaction) internalFunction -> (pos_t,
+      var_t, fn_name_t, MyRegs.reg_t, __) uaction
 
     val routecenterfn :
-      int -> MyRegs.reg_t -> MyRegs.reg_t -> (pos_t, var_t, fn_name_t, MyRegs.reg_t,
-      __) uaction
+      int -> MyRegs.reg_t -> MyRegs.reg_t -> (pos_t, var_t, fn_name_t,
+      MyRegs.reg_t, __) uaction
 
     val routestartfn :
-      int -> MyRegs.reg_t -> (pos_t, var_t, fn_name_t, MyRegs.reg_t, __) uaction
+      int -> MyRegs.reg_t -> (pos_t, var_t, fn_name_t, MyRegs.reg_t, __)
+      uaction
 
     val routeendfn :
-      int -> MyRegs.reg_t -> (pos_t, var_t, fn_name_t, MyRegs.reg_t, __) uaction
+      int -> MyRegs.reg_t -> (pos_t, var_t, fn_name_t, MyRegs.reg_t, __)
+      uaction
    end
 
   val coq_R : reg_t -> type0
@@ -766,6 +826,10 @@ module NOCImpl :
   val schedule : (pos_t, rule_name_t) scheduler
 
   val rules : rule_name_t -> (pos_t, var_t, fn_name_t, reg_t, __) action
+
+  val cpp_extfuns : char list
+
+  val ext_fn_names : __ -> char list
 
   val package : interop_package_t
 

@@ -189,8 +189,9 @@ Definition match_syn := (tLambda {| binder_name := nNamed "rl"%bs; binder_releva
             |} [];
           tInd
             {|
-              inductive_mind :=
-                (MPfile ["Interop"%bs; "Koika"%bs], "empty_ext_fn_t"%bs);
+            inductive_mind :=
+            (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "Routerfns",
+             "ext_fn_t");
               inductive_ind := 0
             |} []]
    |} (tRel 0)
@@ -280,13 +281,41 @@ Definition r (reg : reg_t) : R reg :=
   match reg with
   |  _ => Bits.zero
   end.
+Print ext_fn_t.
+
+ (* Definition to_action (rl: rule_name_t) := 
+  match rl with
+  | router_1 => routestartfn 0 r1
+  | router_2 => routecenterfn 1 r1 r2
+  | router_3 => routecenterfn 2 r2 r3
+  | router_4 => routeendfn 3 r3
+  end.
+
+Check to_action.
+
+MetaCoq Quote Definition testl:= Eval unfold to_action in to_action.
+Print testl.  *)
 
 MetaCoq Run ( tmMkDefinition "to_action"%bs match_syn).  
 
 MetaCoq Run ( tmMkDefinition "schedule"%bs scheduler_synatx). 
 
+Print _routestart_r.
+
 Definition rules :=
-  tc_rules R empty_Sigma to_action.
+  tc_rules R Sigma to_action.
+
+  Definition cpp_extfuns := "class extfuns {
+public:
+  static bits<32> tile_intf(bits<32> st) {
+    return st;
+  }
+};"%string.
+
+Definition ext_fn_names fn :=
+  match fn with
+  | Tile_Intf => "tile_intf"%string
+  end.
 
   Definition package :=
     {|
@@ -294,25 +323,25 @@ Definition rules :=
     {|
     koika_reg_types := R;
     koika_reg_init := r;
-    koika_ext_fn_types := empty_Sigma;
+    koika_ext_fn_types := Sigma;
     koika_rules := rules;
     koika_rule_external := (fun _ => false);
     koika_scheduler := schedule;
     koika_module_name := "NoC"
     |};
-    ip_sim :=
-    {|
-    sp_ext_fn_specs := empty_ext_fn_props;
-    sp_prelude := None
-    |};
-    ip_verilog :=
-    {|
-    vp_ext_fn_specs := empty_ext_fn_props
-    |}
+    
+    ip_sim := {| sp_ext_fn_specs fn :=
+    {| efs_name := ext_fn_names fn;
+       efs_method := false |};
+  sp_prelude := Some cpp_extfuns |};
+  ip_verilog := {| vp_ext_fn_specs fn :=
+  {| efr_name := ext_fn_names fn;
+     efr_internal := false
+        |} |}
     |}.
 (* Definition r_send_r1 := r_send r1. 
 
-Definition tc_r_send := tc_function R empty_Sigma r_send_r1.
+Definition tc_r_send := tc_function R Sigma r_send_r1.
 Definition tc_r_receive := tc_function R Sigma r_receive. *)
 
 Definition prog := Interop.Backends.register package.
@@ -371,7 +400,7 @@ Definition r_r2l (reg : reg_t) : R reg :=
   end.
 
 Goal
-run_schedule r_r2l rules empty_sigma schedule
+run_schedule r_r2l rules Sigma schedule
 (fun ctxt =>
 let r' := (fun idx => 
 match idx with
@@ -380,7 +409,7 @@ match idx with
   | r3=> ctxt.[r3]
   end ) in
 
-run_schedule r' rules empty_sigma schedule
+run_schedule r' rules Sigma schedule
 (fun ctxt2 =>
 let bits_r0 := ctxt2.[r1] in
 Bits.to_nat bits_r0 = 8705)).
@@ -398,7 +427,7 @@ Definition r_l2r (reg : reg_t) : R reg :=
   end.
 
 Goal
-run_schedule r_l2r rules empty_sigma schedule
+run_schedule r_l2r rules Sigma schedule
 (fun ctxt =>
 let r' := (fun idx => 
 match idx with
@@ -407,7 +436,7 @@ match idx with
   | r3=> ctxt.[r3]
   end ) in
 
-run_schedule r' rules empty_sigma schedule
+run_schedule r' rules Sigma schedule
 (fun ctxt2 =>
 let bits_r0 := ctxt2.[r3]in
 Bits.to_nat bits_r0 = 9313)).

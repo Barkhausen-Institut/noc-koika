@@ -10,21 +10,40 @@ End Registers.
 Module Router (Regs:Registers).
 Import Regs.
 Import Types.
-Definition r_send (reg_name: reg_t) : UInternalFunction reg_t empty_ext_fn_t :=
+
+Inductive ext_fn_t :=
+| Tile_Intf.
+
+Definition Sigma (fn: ext_fn_t) : ExternalSignature :=
+  match fn with
+  | Tile_Intf => {$ bits_t sz ~> bits_t sz $}
+  end.
+
+Definition fnsigma fn : Sig_denote (Sigma fn) :=
+  match fn with
+  | Tile_Intf => fun x => x 
+  end.
+
+Definition to_tile : UInternalFunction reg_t ext_fn_t :=
+  {{ fun to_tile (value: bits_t sz) : unit_t =>
+    extcall Tile_Intf(value)
+  }}.
+
+Definition r_send (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
   {{ fun r_send (value: bits_t sz) : unit_t =>
     write0(reg_name, value)
   }}.
 
-Definition r_receive (reg_name: reg_t) : UInternalFunction reg_t empty_ext_fn_t :=
+Definition r_receive (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
   {{ fun r_receive () : bits_t sz =>
     read0(reg_name)
   }}.
 
-Definition _routestart_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg_t empty_ext_fn_t) 
-: uaction reg_t empty_ext_fn_t :=
+Definition _routestart_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg_t ext_fn_t) 
+: uaction reg_t ext_fn_t :=
 UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
 {{
-    let m0 := r0_receive() in (*router input policy will be added here*)
+    let m0 := r0_receive() ^  extcall Tile_Intf(|14`d0|) in (*router input policy will be added here*)
     let msg := unpack(struct_t basic_flit, m0) in
     let new_data := get(msg, new) in
     let src_p := get(msg, src) in
@@ -39,17 +58,17 @@ UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
         else if trg_x < src_x then
         fail
         else
-        pass    (*Pass to tile from this block*)
+        pass
     else
     pass ))
 }}.
   
-Definition _routecenter_r (r_addr2: nat) (r0_send r1_send r0_receive r1_receive: UInternalFunction reg_t empty_ext_fn_t) 
-: uaction reg_t empty_ext_fn_t :=
+Definition _routecenter_r (r_addr2: nat) (r0_send r1_send r0_receive r1_receive: UInternalFunction reg_t ext_fn_t) 
+: uaction reg_t ext_fn_t :=
   UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
   {{
-  let m0 := r0_receive() in (*router input policy will be added here*)
-  let m1 := r1_receive() in 
+  let m0 := r0_receive() ^  extcall Tile_Intf(|14`d0|) in (*router input policy will be added here*)
+  let m1 := r1_receive() ^  extcall Tile_Intf(|14`d0|) in 
   let msg := unpack(struct_t basic_flit, m0) in
   let new_data := get(msg, new) in
   let src_p := get(msg, src) in
@@ -65,7 +84,7 @@ Definition _routecenter_r (r_addr2: nat) (r0_send r1_send r0_receive r1_receive:
       else if trg_x < src_x then
       r0_send(pack(subst(msg, src, r_addr)))
       else
-      pass    (*Pass to tile from this block*)
+      pass
   else
   pass ));
   let msg1 := unpack(struct_t basic_flit, m1) in
@@ -83,17 +102,17 @@ Definition _routecenter_r (r_addr2: nat) (r0_send r1_send r0_receive r1_receive:
       else if trg_x < src_x then
       r0_send(pack(subst(msg1, src, r_addr)))
       else
-      pass    (*Pass to tile from this block*)
+      pass
   else
   pass ))
 
   }}.
 
-Definition _routeend_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg_t empty_ext_fn_t) 
-: uaction reg_t empty_ext_fn_t :=
+Definition _routeend_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg_t ext_fn_t) 
+: uaction reg_t ext_fn_t :=
   UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
   {{
-  let m0 := r0_receive() in (*router input policy will be added here*)
+  let m0 := r0_receive() ^  extcall Tile_Intf(|14`d0|) in (*router input policy will be added here*)
   let msg := unpack(struct_t basic_flit, m0) in
   let new_data := get(msg, new) in
   let src_p := get(msg, src) in
@@ -113,13 +132,13 @@ Definition _routeend_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg
   pass ))
   }}.
 
-Definition routecenterfn (n:nat) (r1 r2 : reg_t): uaction reg_t empty_ext_fn_t :=
+Definition routecenterfn (n:nat) (r1 r2 : reg_t): uaction reg_t ext_fn_t :=
   _routecenter_r n (r_send r1) (r_send r2) (r_receive r1) (r_receive r2).
 
-Definition routestartfn (n:nat) (r1 : reg_t): uaction reg_t empty_ext_fn_t :=
+Definition routestartfn (n:nat) (r1 : reg_t): uaction reg_t ext_fn_t :=
   _routestart_r n (r_send r1) (r_receive r1). 
 
-Definition routeendfn (n:nat) (r1 : reg_t): uaction reg_t empty_ext_fn_t :=
+Definition routeendfn (n:nat) (r1 : reg_t): uaction reg_t ext_fn_t :=
   _routeend_r n (r_send r1) (r_receive r1).
 
 
