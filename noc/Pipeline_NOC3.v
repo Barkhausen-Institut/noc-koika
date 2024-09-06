@@ -162,6 +162,7 @@ Definition to_action rl :=
   | route3_r => _routeend_r Ob~0~0~1~1 (r_send r2) (r_receive r2)
   end.
 
+ Print to_action. 
 Definition R ( reg : reg_t ) :=
   match reg with
   |  r0 => bits_t (struct_sz basic_flit)

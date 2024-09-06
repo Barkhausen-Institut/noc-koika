@@ -43,8 +43,13 @@ Import Routerfns.
 Definition _routetest (r0_send r0_receive: UInternalFunction reg_t empty_ext_fn_t) 
 : uaction reg_t empty_ext_fn_t :=
 {{
-    let m0 := r0_receive() in (*router input policy will be added here*)
-    r0_send(m0)
+let trg_x := |4`d0| in
+let src_x := |4`d1| in
+(*r_addr[|2`d0| :+ 2] if not using struct*)
+if trg_x > src_x then
+fail
+else
+pass    (*Pass to tile from this block*)
 }}.
 
 Compute _routetest.
@@ -198,6 +203,7 @@ Inductive Koika.Syntax.uaction
     Proof.
     intros.
     rewrite /type_action.
+    rewrite -/[type_action R Sigma pos sig e].
     rewrite /H/H0.
     Admitted.
 
@@ -229,6 +235,33 @@ Inductive Koika.Syntax.uaction
 
     End TIHelp.
 
+    (* Lemma test:
+    forall  Sigma rl,
+    { x | TypeInference.tc_action R Sigma dummy_pos (@List.nil (var_t * type)) unit_t
+    (desugar_action dummy_pos (to_action rl)) = Success x }.
+    Proof.
+    destruct rl.
+    - intros.
+    eexists.
+    rewrite /to_action/routetest/_routetest.
+    rewrite /desugar_action/desugar_action' -/desugar_action'. 
+    rewrite /TypeInference.tc_action.
+    erewrite <- (@ubind rule_name_t _ _ _ _ _ _
+        (UConst _) (UBind "src_x" _ _)).
+    2: {reflexivity. }
+    2: {
+      erewrite <- (@ubind rule_name_t _ _ _ _ _ _
+        (UConst _ ) (UIf _ _ _)).
+    1: {reflexivity. }
+    1: {reflexivity. }
+    erewrite <- (@uif _ _ _ _ _ _ _ _ _ (UConst _)).
+    all: by [reflexivity]. }
+    reflexivity.
+    - intros.
+     *)
+    
+    
+    
     Lemma xxx :
     forall  Sigma rl,
     { x | TypeInference.tc_action R Sigma dummy_pos (@List.nil (var_t * type)) unit_t
@@ -240,23 +273,34 @@ Inductive Koika.Syntax.uaction
       rewrite /to_action/routestartfn/_routestart_r.
       rewrite /desugar_action/desugar_action' -/desugar_action'.
       rewrite /TypeInference.tc_action.
+      
       erewrite <- (@ubind rule_name_t _ _ _ _ _ _
         (UConst _) (UBind "m0" _ _)).
       2: { reflexivity. }
       2: {
+      rewrite /projT1.
+      
+      rewrite /r_receive/desugar_action'.
+
       erewrite <- (@ubind rule_name_t _ _ _ _ _ _
         (UInternalCall _ _) (UBind "msg" _ _)).
       2: { reflexivity. }
       1: { reflexivity. }
-      2: {erewrite <- (@ubind rule_name_t _ _ _ _ _ _
+      rewrite /projT1.
+
+      erewrite <- (@ubind rule_name_t _ _ _ _ _ _
       (_) (UBind "new_data" _ _)).
       2: {reflexivity. }
-      2: {erewrite <- (@ubind rule_name_t _ _ _ _ _ _
+      1: { reflexivity. }
+      erewrite <- (@ubind rule_name_t _ _ _ _ _ _
       (_) (UBind "src_p" _ _)). 
-      2: {reflexivity. }
-      2: { erewrite <- (@ubind rule_name_t _ _ _ _ _ _
+      2: {by []. }
+      1: { reflexivity. }
+      
+      erewrite <- (@ubind rule_name_t _ _ _ _ _ _
       (_) (UIf _ _ _)).
       2: {reflexivity. }
+      1: {reflexivity. }
       2: {erewrite <- (@uif _ _ _ _ _ _ _ _ (UBind _ _ _ ) (UConst _)).
        } 
       
@@ -265,213 +309,90 @@ Inductive Koika.Syntax.uaction
       }}
 
 
-      Error: Found no subterm matching "type_action 
-                             ?R ?Sigma 
-                             ?pos ?sig
-                             (UBind ?M1727
-                                (UIf ?cond 
-                                   ?tbranch 
-                                   ?fbranch)
-                                (UBind "trg_x" ?ex ?body))" in the current goal.
-        1/3
-        cast_action R Sigma dummy_pos unit_t
-          (projT2
-             (existT [eta action R Sigma []] 
-                (projT1 ?b')
-                (Bind "r_addr" (projT2 ?e') (projT2 ?b')))) =
-        Success ?x
-
-        all: by [].
-        
-        3/3
-        Success ?b' =
-        type_action R Sigma dummy_pos
-          [("r_addr", projT1 ?e')]
-          (UBind "m0"
-             (UInternalCall
+      type_action R Sigma dummy_pos
+      [("m0",
+        projT1
+          (existT
+             [eta action R Sigma
+                    [("r_addr",
+                      projT1
+                        (existT [eta action R Sigma []] 
+                           (bits_t 4) (Const (Bits.of_nat 4 0))))]]
+             (int_retSig
                 (map_intf_body
-                   [eta desugar_action' dummy_pos
-                          [eta Datatypes.id]
-                          [eta Lift_self]]
-                   (r_receive (reg_ thisone)))
-                (map [eta desugar_action' dummy_pos id id]
-                   []))
-             (UBind "msg"
-                {{
-                  unpack( struct_t basic_flit, "m0")
-                  }}
-                (UBind "new_data" {{
-                                    get("msg", 
-                                    "new")
-                                    }}
-                   (UBind "src_p" {{
-                                    get("msg", 
-                                    "src")
-                                    }}
-                      (UIf
-                         {{
-                           "src_p" != "r_addr" && "new_data"
-                           }}
-                         (UBind "trg_x"
-                            {{
-                              get("msg", 
-                              "trg_x")
-                              }}
-                            (UBind "trg_y"
-                               {{
-                                 get("msg", 
-                                 "trg_y")
-                                 }}
-                               (UBind "src_x"
-                                  {{
-                                    get(unpack( 
-                                        struct_t
-                                        router_address,
-                                        "r_addr"), 
-                                    "x")
-                                    }}
-                                  (UBind "src_y"
-                                     {{
-                                       get(
-                                       unpack( 
-                                       struct_t
-                                        router_address,
-                                       "r_addr"), 
-                                       "y")
-                                       }}
-                                     (UIf
-                                        {{
-                                        
-                                        "trg_x" > "src_x"
-                                        }}
-                                        (UInternalCall
-                                        (map_intf_body
-                                        [eta 
-                                        desugar_action'
-                                        dummy_pos
-                                        [eta Datatypes.id]
-                                        [eta Lift_self]]
-                                        (r_send
-                                        (reg_ thisone)))
-                                        (map
-                                        [eta 
-                                        desugar_action'
-                                        dummy_pos id id]
-                                        [{{
-                                        pack( subst("msg", 
-                                        "src","r_addr"))
-                                        }}]))
-                                        (UIf
-                                        {{
+                   [eta desugar_action' dummy_pos [eta Datatypes.id]
+                          [eta Lift_self]] (r_receive (reg_ thisone))))
+             (InternalCall
+                (int_name
+                   (map_intf_body
+                      [eta desugar_action' dummy_pos [eta Datatypes.id]
+                             [eta Lift_self]] (r_receive (reg_ thisone))))
+                CtxEmpty
+                (projT2
+                   (existT
+                      [eta action R Sigma
+                             (rev
+                                (int_argspec
+                                   (map_intf_body
+                                      [eta desugar_action' dummy_pos
+                                             [eta Datatypes.id]
+                                             [eta Lift_self]]
+                                      (r_receive (reg_ thisone)))))]
+                      (R ([eta Datatypes.id] (reg_ thisone)))
+                      (Read P0 ([eta Datatypes.id] (reg_ thisone))))))));
+       ("r_addr",
+        projT1
+          (existT [eta action R Sigma []] (bits_t 4)
+             (Const (Bits.of_nat 4 0))))]
+      (UBind "msg" {{
+                     unpack( struct_t basic_flit, "m0")
+                     }}
+         (UBind "new_data" {{
+                             get("msg", "new")
+                             }}
+            (UBind "src_p" {{
+                             get("msg", "src")
+                             }}
+               (UIf {{
+                      "src_p" != "r_addr" && "new_data"
+                      }}
+                  (UBind "trg_x" {{
+                                   get("msg", "trg_x")
+                                   }}
+                     (UBind "trg_y" {{
+                                      get("msg", "trg_y")
+                                      }}
+                        (UBind "src_x"
+                           {{
+                             get(unpack( struct_t router_address, "r_addr"), 
+                             "x")
+                             }}
+                           (UBind "src_y"
+                              {{
+                                get(unpack( struct_t router_address,
+                                    "r_addr"), "y")
+                                }}
+                              (UIf {{
+                                     "trg_x" > "src_x"
+                                     }}
+                                 (UInternalCall
+                                    (map_intf_body
+                                       [eta desugar_action' dummy_pos
+                                              [eta Datatypes.id]
+                                              [eta Lift_self]]
+                                       (r_send (reg_ thisone)))
+                                    (map
+                                       [eta desugar_action' dummy_pos id id]
+                                       [{{
+                                          pack( subst("msg", 
+                                          "src","r_addr"))
+                                          }}]))
+                                 (UIf {{
                                         "trg_x" < "src_x"
                                         }} {{
-                                        
-                                        fail
-                                        }} (UConst Ob)))))))
-                         (UConst Ob))))))
-
-MAIN
-1
-SHELVED
-1
-GIVEN UP
-0
-Sigma: empty_ext_fn_t -> ExternalSignature
-1/1
-(let/res a
- := type_action R Sigma dummy_pos []
-      (UBind "r_addr" (UConst (Bits.of_nat 4 0))
-         (UBind "m0"
-            (UInternalCall
-               (map_intf_body
-                  [eta desugar_action' dummy_pos
-                         [eta Datatypes.id]
-                         [eta Lift_self]]
-                  (r_receive (reg_ thisone)))
-               (map
-                  [eta desugar_action' dummy_pos
-                         id id] []))
-            (UBind "msg"
-               {{
-                 unpack( struct_t basic_flit,
-                 "m0")
-                 }}
-               (UBind "new_data"
-                  {{
-                    get("msg", "new")
-                    }}
-                  (UBind "src_p"
-                     {{
-                       get("msg", 
-                       "src")
-                       }}
-                     (UIf
-                        {{
-                          "src_p" != "r_addr" && "new_data"
-                          }}
-                        (UBind "trg_x"
-                           {{
-                             get("msg", 
-                             "trg_x")
-                             }}
-                           (UBind "trg_y"
-                              {{
-                                get("msg", 
-                                "trg_y")
-                                }}
-                              (UBind "src_x"
-                                {{
-                                
-                                get(
-                                unpack( 
-                                struct_t
-                                router_address,
-                                "r_addr"), 
-                                "x")
-                                }}
-                                (UBind "src_y"
-                                {{
-                                get(
-                                unpack( 
-                                struct_t
-                                router_address,
-                                "r_addr"), 
-                                "y")
-                                }}
-                                (UIf
-                                {{
-                                "trg_x" > "src_x"
-                                }}
-                                (UInternalCall
-                                (map_intf_body
-                                [eta 
-                                desugar_action'
-                                dummy_pos
-                                [eta Datatypes.id]
-                                [eta Lift_self]]
-                                (r_send
-                                (reg_ thisone)))
-                                (map
-                                [eta 
-                                desugar_action'
-                                dummy_pos id id]
-                                [{{
-                                pack( subst("msg", 
-                                "src","r_addr"))
-                                }}]))
-                                (UIf
-                                {{
-                                "trg_x" < "src_x"
-                                }} {{
-                                
-                                fail
-                                }} (UConst Ob)))))))
-                        (UConst Ob)))))))
- in cast_action R Sigma dummy_pos unit_t `` (a)) =
-Success ?x
-      ).
-
-
+                                             fail
+                                             }} (UConst Ob)))))))
+                  (UConst Ob)))))
 
 
 

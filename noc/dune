@@ -10,7 +10,7 @@
 
  ; tell dune, that we depend on 'koika'
  ; this referes to 'koika/coq/dune'
- (theories Ltac2 Koika)
+ (theories Ltac2 Koika Equations)
 )
 
 (env
