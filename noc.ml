@@ -1920,8 +1920,17 @@ module Router =
     { int_name = ('r'::('_'::('s'::('e'::('n'::('d'::[])))))); int_argspec =
       ((prod_of_argsig { arg_name = ('v'::('a'::('l'::('u'::('e'::[])))));
          arg_type = (Bits_t Types.sz) }) :: []); int_retSig = (Bits_t 0);
-      int_body = (UWrite (P0, reg_name, (UVar
-      ('v'::('a'::('l'::('u'::('e'::[])))))))) }
+      int_body = (UWrite (P0, reg_name, (UBinop ((PrimUntyped.UBits2
+      PrimUntyped.UXor), (UVar ('v'::('a'::('l'::('u'::('e'::[])))))),
+      (UExternalCall (__, (USugar (UConstBits ((Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ 0)))))))))))))),
+      (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))))) }
 
   (** val r_receive :
       Regs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,

@@ -31,7 +31,7 @@ Definition to_tile : UInternalFunction reg_t ext_fn_t :=
 
 Definition r_send (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
   {{ fun r_send (value: bits_t sz) : unit_t =>
-    write0(reg_name, value)
+    write0(reg_name, value ^  extcall Tile_Intf(|14`d0|))
   }}.
 
 Definition r_receive (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=

@@ -52,8 +52,22 @@ module NoC(input wire[0:0] CLK, input wire[0:0] RST_N, input wire[13:0] tile_int
 	wire[0:0] _router_3_out0 = _wF_router_30 && (_cond8 && ~_cond9 ? _cond10 || _cond11 : _cond11);
 	wire[0:0] _wF_router_20 = (_cond2 ? (_cond3 ? 1'b0 : (_cond4 ? _write0_canFire0 && ~_cond5 : _write0_canFire0)) : _if_canFire0) && (~_router_3_out0 && (~(_cond2 || _if_mux0) || ~_router_3_out0));
 	wire[0:0] _router_2_out0 = _wF_router_20 && (_cond2 && ~_cond3 ? _cond4 || _cond5 : _cond5);
-	wire[13:0] _router_3_out1 = _wF_router_30 ? (_cond8 && ~(_cond9 || ~_cond10) ? {{_mux_ccontext1[13 +: 1], 4'b0010}, _mux_ccontext1[0 +: 9]} : (_cond11 ? (_cond12 || ~_cond13 ? {1'b0, _var_m02[0 +: 13]} : {{_var_m02[13 +: 1], 4'b0010}, _var_m02[0 +: 9]}) : r2)) : r2;
-	wire[13:0] _router_4_out1 = _if_canFire2 && (_cond14 && ~(_cond15 || ~_cond16)) ? {{_var_m03[13 +: 1], 4'b0011}, _var_m03[0 +: 9]} : r3;
+	assign tile_intf_arg = 14'b0;
+	assign tile_intf_arg = 14'b0;
+	assign tile_intf_arg = 14'b0;
+	assign tile_intf_arg = 14'b0;
+	assign tile_intf_arg = 14'b0;
+	assign tile_intf_arg = 14'b0;
+	assign tile_intf_arg = 14'b0;
+	assign tile_intf_arg = 14'b0;
+	assign tile_intf_arg = 14'b0;
+	assign tile_intf_arg = 14'b0;
+	wire[13:0] _router_3_out1 = _wF_router_30 ? (_cond8 && ~(_cond9 || ~_cond10) ? {{_mux_ccontext1[13 +: 1], 4'b0010}, _mux_ccontext1[0 +: 9]} ^ tile_intf_out : (_cond11 ? (_cond12 || ~_cond13 ? {1'b0, _var_m02[0 +: 13]} ^ tile_intf_out : {{_var_m02[13 +: 1], 4'b0010}, _var_m02[0 +: 9]} ^ tile_intf_out) : r2)) : r2;
+	assign tile_intf_arg = 14'b0;
+	assign tile_intf_arg = 14'b0;
+	assign tile_intf_arg = 14'b0;
+	assign tile_intf_arg = 14'b0;
+	wire[13:0] _router_4_out1 = _if_canFire2 && (_cond14 && ~(_cond15 || ~_cond16)) ? {{_var_m03[13 +: 1], 4'b0011}, _var_m03[0 +: 9]} ^ tile_intf_out : r3;
 
 	always @(posedge CLK) begin
 		if (!RST_N) begin
@@ -61,9 +75,9 @@ module NoC(input wire[0:0] CLK, input wire[0:0] RST_N, input wire[13:0] tile_int
 			r2 <= 14'b0;
 			r3 <= 14'b0;
 		end else begin
-			r1 <= ((_cond0 ? _cond1 || ~($unsigned(_0) < $unsigned(2'b0)) : 1'b1) && (~_router_2_out0 && (~(_cond0 && _cond1) || ~_router_2_out0))) && (_cond0 && _cond1) ? {{_var_m00[13 +: 1], 4'b0}, _var_m00[0 +: 9]} : (_wF_router_20 ? (_cond2 && ~(_cond3 || ~_cond4) ? {{_mux_ccontext0[13 +: 1], 4'b0001}, _mux_ccontext0[0 +: 9]} : (_cond5 ? (_cond6 || ~_cond7 ? {1'b0, _var_m01[0 +: 13]} : {{_var_m01[13 +: 1], 4'b0001}, _var_m01[0 +: 9]}) : r1)) : r1);
-			r2 <= _wF_router_20 ? (_cond2 ? (_cond3 ? {{_mux_ccontext0[13 +: 1], 4'b0001}, _mux_ccontext0[0 +: 9]} : {1'b0, _mux_ccontext0[0 +: 13]}) : (_cond5 && _cond6 ? {{_var_m01[13 +: 1], 4'b0001}, _var_m01[0 +: 9]} : _router_3_out1)) : _router_3_out1;
-			r3 <= _wF_router_30 ? (_cond8 ? (_cond9 ? {{_mux_ccontext1[13 +: 1], 4'b0010}, _mux_ccontext1[0 +: 9]} : {1'b0, _mux_ccontext1[0 +: 13]}) : (_cond11 && _cond12 ? {{_var_m02[13 +: 1], 4'b0010}, _var_m02[0 +: 9]} : _router_4_out1)) : _router_4_out1;
+			r1 <= ((_cond0 ? _cond1 || ~($unsigned(_0) < $unsigned(2'b0)) : 1'b1) && (~_router_2_out0 && (~(_cond0 && _cond1) || ~_router_2_out0))) && (_cond0 && _cond1) ? {{_var_m00[13 +: 1], 4'b0}, _var_m00[0 +: 9]} ^ tile_intf_out : (_wF_router_20 ? (_cond2 && ~(_cond3 || ~_cond4) ? {{_mux_ccontext0[13 +: 1], 4'b0001}, _mux_ccontext0[0 +: 9]} ^ tile_intf_out : (_cond5 ? (_cond6 || ~_cond7 ? {1'b0, _var_m01[0 +: 13]} ^ tile_intf_out : {{_var_m01[13 +: 1], 4'b0001}, _var_m01[0 +: 9]} ^ tile_intf_out) : r1)) : r1);
+			r2 <= _wF_router_20 ? (_cond2 ? (_cond3 ? {{_mux_ccontext0[13 +: 1], 4'b0001}, _mux_ccontext0[0 +: 9]} ^ tile_intf_out : {1'b0, _mux_ccontext0[0 +: 13]} ^ tile_intf_out) : (_cond5 && _cond6 ? {{_var_m01[13 +: 1], 4'b0001}, _var_m01[0 +: 9]} ^ tile_intf_out : _router_3_out1)) : _router_3_out1;
+			r3 <= _wF_router_30 ? (_cond8 ? (_cond9 ? {{_mux_ccontext1[13 +: 1], 4'b0010}, _mux_ccontext1[0 +: 9]} ^ tile_intf_out : {1'b0, _mux_ccontext1[0 +: 13]} ^ tile_intf_out) : (_cond11 && _cond12 ? {{_var_m02[13 +: 1], 4'b0010}, _var_m02[0 +: 9]} ^ tile_intf_out : _router_4_out1)) : _router_4_out1;
 		end
 	end
 endmodule
