@@ -196,13 +196,38 @@ Inductive Koika.Syntax.uaction
       Success b'                      = type_action R Sigma pos ((x, `e') :: sig) b ->
       Success (EX (Bind x ``e' ``b')) = type_action R Sigma pos sig (UBind x e b)  .
     Proof.
+    intros.
+    rewrite /type_action.
+    rewrite /H/H0.
     Admitted.
 
-    (* Lemma uif
-    (pos: Frontend.pos_t) {sig}
-     *)
+    Definition actpos {reg_t ext_fn_t} pos (e: uaction reg_t ext_fn_t) :=
+      match e with
+      | UAPos p _ => p
+      | _ => pos
+      end.
 
-    End TIHelp.S
+      (* let/res var := expr in body :=
+  (match expr with
+   | Success var => body
+   | Failure f => Failure f
+   end) *)
+
+    Lemma uif
+    (pos: Frontend.pos_t) {sig}
+    (cond: (uaction reg_t ext_fn_t))
+    (tbranch: (uaction reg_t ext_fn_t))
+    (fbranch: (uaction reg_t ext_fn_t))
+    cond' tbranch' fbranch' cond'' fbranch'':
+    Success cond' = type_action R Sigma pos sig cond ->
+    Success cond'' = cast_action R Sigma (actpos pos cond) (bits_t 1) (``cond') ->
+    Success tbranch' = type_action R Sigma pos sig tbranch ->
+    Success fbranch' = type_action R Sigma pos sig fbranch ->
+    Success fbranch'' = cast_action R Sigma (actpos pos fbranch) (`tbranch') (``fbranch') ->
+    Success (EX (If cond'' ``tbranch' fbranch'')) = type_action R Sigma pos sig (UIf cond tbranch fbranch).
+    Admitted.
+
+    End TIHelp.
 
     Lemma xxx :
     forall  Sigma rl,
@@ -222,13 +247,18 @@ Inductive Koika.Syntax.uaction
       erewrite <- (@ubind rule_name_t _ _ _ _ _ _
         (UInternalCall _ _) (UBind "msg" _ _)).
       2: { reflexivity. }
+      1: { reflexivity. }
       2: {erewrite <- (@ubind rule_name_t _ _ _ _ _ _
       (_) (UBind "new_data" _ _)).
       2: {reflexivity. }
       2: {erewrite <- (@ubind rule_name_t _ _ _ _ _ _
       (_) (UBind "src_p" _ _)). 
       2: {reflexivity. }
-      2: {.
+      2: { erewrite <- (@ubind rule_name_t _ _ _ _ _ _
+      (_) (UIf _ _ _)).
+      2: {reflexivity. }
+      2: {erewrite <- (@uif _ _ _ _ _ _ _ _ (UBind _ _ _ ) (UConst _)).
+       } 
       
       erewrite <- (@ubind rule_name_t _ _ _ _ _ _
       (UIf _ _ _) _). 
