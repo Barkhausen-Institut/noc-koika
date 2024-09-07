@@ -301,21 +301,26 @@ MetaCoq Run ( tmMkDefinition "to_action"%bs match_syn).
 MetaCoq Run ( tmMkDefinition "schedule"%bs scheduler_synatx). 
 
 Print _routestart_r.
+Definition external (r: rule_name_t) := false.
+
 
 Definition rules :=
   tc_rules R Sigma to_action.
 
-  Definition cpp_extfuns := "class extfuns {
+  (* Definition cpp_extfuns := "class extfuns {
 public:
   static bits<32> tile_intf(bits<32> st) {
     return st;
   }
-};"%string.
+};"%string. *)
 
 Definition ext_fn_names fn :=
   match fn with
-  | Tile_Intf => "tile_intf"%string
-  end.
+  | Tile_In => "tile_in"%string
+  | Tile_Out => "tile_out"%string
+  end. 
+
+
 
   Definition package :=
     {|
@@ -325,7 +330,7 @@ Definition ext_fn_names fn :=
     koika_reg_init := r;
     koika_ext_fn_types := Sigma;
     koika_rules := rules;
-    koika_rule_external := (fun _ => false);
+    koika_rule_external := external;
     koika_scheduler := schedule;
     koika_module_name := "NoC"
     |};
@@ -333,7 +338,7 @@ Definition ext_fn_names fn :=
     ip_sim := {| sp_ext_fn_specs fn :=
     {| efs_name := ext_fn_names fn;
        efs_method := false |};
-  sp_prelude := Some cpp_extfuns |};
+  sp_prelude := None |};
   ip_verilog := {| vp_ext_fn_specs fn :=
   {| efr_name := ext_fn_names fn;
      efr_internal := false

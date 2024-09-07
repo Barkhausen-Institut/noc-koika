@@ -12,26 +12,23 @@ Import Regs.
 Import Types.
 
 Inductive ext_fn_t :=
-| Tile_Intf.
+| Tile_In
+| Tile_Out.
 
 Definition Sigma (fn: ext_fn_t) : ExternalSignature :=
   match fn with
-  | Tile_Intf => {$ bits_t sz ~> bits_t sz $}
+  | Tile_In => {$ bits_t 1 ~> bits_t sz $}
+  | Tile_Out => {$ bits_t sz ~> bits_t 1 $}
   end.
 
-Definition fnsigma fn : Sig_denote (Sigma fn) :=
-  match fn with
-  | Tile_Intf => fun x => x 
-  end.
-
-Definition to_tile : UInternalFunction reg_t ext_fn_t :=
+(* Definition to_tile : UInternalFunction reg_t ext_fn_t :=
   {{ fun to_tile (value: bits_t sz) : unit_t =>
     extcall Tile_Intf(value)
-  }}.
+  }}. *)
 
 Definition r_send (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
   {{ fun r_send (value: bits_t sz) : unit_t =>
-    write0(reg_name, value ^  extcall Tile_Intf(|14`d0|))
+    write0(reg_name, value)
   }}.
 
 Definition r_receive (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
@@ -43,10 +40,12 @@ Definition _routestart_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction r
 : uaction reg_t ext_fn_t :=
 UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
 {{
-    let m0 := r0_receive() ^  extcall Tile_Intf(|14`d0|) in (*router input policy will be added here*)
+    let tile_in := extcall Tile_In(|1`d0|) in
+    let m0 := r0_receive() ^ tile_in in (*router input policy will be added here*)
     let msg := unpack(struct_t basic_flit, m0) in
     let new_data := get(msg, new) in
     let src_p := get(msg, src) in
+    
     (( if (src_p != r_addr && new_data) then 
         let trg_x := get(msg, trg_x) in
         let trg_y := get(msg, trg_y) in
@@ -58,6 +57,7 @@ UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
         else if trg_x < src_x then
         fail
         else
+        let tile_out := extcall Tile_Out(r0_receive()) in
         pass
     else
     pass ))
@@ -67,8 +67,8 @@ Definition _routecenter_r (r_addr2: nat) (r0_send r1_send r0_receive r1_receive:
 : uaction reg_t ext_fn_t :=
   UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
   {{
-  let m0 := r0_receive() ^  extcall Tile_Intf(|14`d0|) in (*router input policy will be added here*)
-  let m1 := r1_receive() ^  extcall Tile_Intf(|14`d0|) in 
+  let m0 := r0_receive() in (*router input policy will be added here*)
+  let m1 := r1_receive() in 
   let msg := unpack(struct_t basic_flit, m0) in
   let new_data := get(msg, new) in
   let src_p := get(msg, src) in
@@ -112,7 +112,7 @@ Definition _routeend_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg
 : uaction reg_t ext_fn_t :=
   UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
   {{
-  let m0 := r0_receive() ^  extcall Tile_Intf(|14`d0|) in (*router input policy will be added here*)
+  let m0 := r0_receive() in (*router input policy will be added here*)
   let msg := unpack(struct_t basic_flit, m0) in
   let new_data := get(msg, new) in
   let src_p := get(msg, src) in
