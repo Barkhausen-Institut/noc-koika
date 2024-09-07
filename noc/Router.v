@@ -18,7 +18,7 @@ Inductive ext_fn_t :=
 Definition Sigma (fn: ext_fn_t) : ExternalSignature :=
   match fn with
   | Tile_In => {$ bits_t 1 ~> bits_t sz $}
-  | Tile_Out => {$ bits_t sz ~> bits_t 1 $}
+  | Tile_Out => {$ bits_t sz ~> bits_t sz $}
   end.
 
 (* Definition to_tile : UInternalFunction reg_t ext_fn_t :=
@@ -28,20 +28,19 @@ Definition Sigma (fn: ext_fn_t) : ExternalSignature :=
 
 Definition r_send (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
   {{ fun r_send (value: bits_t sz) : unit_t =>
-    write0(reg_name, value)
+    write0(reg_name, value ^  (extcall Tile_In(|1`d0|)))
   }}.
 
 Definition r_receive (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
   {{ fun r_receive () : bits_t sz =>
-    read0(reg_name)
+      read0(reg_name)
   }}.
 
 Definition _routestart_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg_t ext_fn_t) 
 : uaction reg_t ext_fn_t :=
 UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
 {{
-    let tile_in := extcall Tile_In(|1`d0|) in
-    let m0 := r0_receive() ^ tile_in in (*router input policy will be added here*)
+    let m0 := r0_receive() in (*router input policy will be added here*)
     let msg := unpack(struct_t basic_flit, m0) in
     let new_data := get(msg, new) in
     let src_p := get(msg, src) in
@@ -57,8 +56,8 @@ UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
         else if trg_x < src_x then
         fail
         else
-        let tile_out := extcall Tile_Out(r0_receive()) in
-        pass
+        r0_send(extcall Tile_Out(m0)) 
+        
     else
     pass ))
 }}.
@@ -84,7 +83,7 @@ Definition _routecenter_r (r_addr2: nat) (r0_send r1_send r0_receive r1_receive:
       else if trg_x < src_x then
       r0_send(pack(subst(msg, src, r_addr)))
       else
-      pass
+      r0_send(extcall Tile_Out(m0)) 
   else
   pass ));
   let msg1 := unpack(struct_t basic_flit, m1) in
@@ -102,7 +101,7 @@ Definition _routecenter_r (r_addr2: nat) (r0_send r1_send r0_receive r1_receive:
       else if trg_x < src_x then
       r0_send(pack(subst(msg1, src, r_addr)))
       else
-      pass
+      r0_send(extcall Tile_Out(m1))
   else
   pass ))
 
@@ -127,7 +126,7 @@ Definition _routeend_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg
       else if trg_x < src_x then
       r0_send(pack(subst(msg, src, r_addr)))
       else
-      pass    (*Pass to tile from this block*)
+      r0_send(extcall Tile_Out(m0))     (*Pass to tile from this block*)
   else
   pass ))
   }}.
