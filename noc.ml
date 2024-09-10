@@ -604,6 +604,10 @@ type type_denote = __
 
 type 'argKind _Sig = { argSigs : 'argKind vect; retSig : 'argKind }
 
+type ('argKind, 'type_of_argKind) _Sig_denote = __
+
+type sig_denote = (type0, type_denote) _Sig_denote
+
 (** val cSig_of_Sig : int -> type0 _Sig -> int _Sig **)
 
 let cSig_of_Sig n0 sig0 =
@@ -1898,13 +1902,14 @@ module Router =
 
   (** val coq_Sigma : ext_fn_t -> externalSignature **)
 
-  let coq_Sigma = function
-  | Tile_In ->
-    { argSigs = (vect_cons 0 (Bits_t (Stdlib.Int.succ 0)) (Obj.magic __));
-      retSig = (Bits_t Types.sz) }
-  | Tile_Out ->
+  let coq_Sigma _ =
     { argSigs = (vect_cons 0 (Bits_t Types.sz) (Obj.magic __)); retSig =
       (Bits_t Types.sz) }
+
+  (** val sigma_denote : ext_fn_t -> sig_denote **)
+
+  let sigma_denote _ =
+    Obj.magic (fun x -> x)
 
   (** val r_send :
       Regs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
@@ -1914,10 +1919,8 @@ module Router =
     { int_name = ('r'::('_'::('s'::('e'::('n'::('d'::[])))))); int_argspec =
       ((prod_of_argsig { arg_name = ('v'::('a'::('l'::('u'::('e'::[])))));
          arg_type = (Bits_t Types.sz) }) :: []); int_retSig = (Bits_t 0);
-      int_body = (UWrite (P0, reg_name, (UBinop ((PrimUntyped.UBits2
-      PrimUntyped.UXor), (UVar ('v'::('a'::('l'::('u'::('e'::[])))))),
-      (UExternalCall (Tile_In, (USugar (UConstBits ((Stdlib.Int.succ 0),
-      (Bits.of_N (Stdlib.Int.succ 0) 0)))))))))) }
+      int_body = (UWrite (P0, reg_name, (UVar
+      ('v'::('a'::('l'::('u'::('e'::[])))))))) }
 
   (** val r_receive :
       Regs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
@@ -1940,11 +1943,21 @@ module Router =
       ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
       0)))),
       (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ 0)))) r_addr2)))), (UBind (('m'::('0'::[])), (USugar
-      (UCallModule ((Obj.magic id), (Obj.magic lift_self),
-      (Obj.magic r0_receive), []))), (UBind (('m'::('s'::('g'::[]))), (UUnop
-      ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t Types.basic_flit))),
-      (UVar ('m'::('0'::[]))))), (UBind
+        (Stdlib.Int.succ 0)))) r_addr2)))), (UBind (('m'::('0'::[])), (UBinop
+      ((PrimUntyped.UBits2 PrimUntyped.UXor), (USugar (UCallModule
+      ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_receive), []))),
+      (UExternalCall (Tile_In, (USugar (UConstBits ((Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ 0)))))))))))))),
+      (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
+      (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+      (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
+      ('m'::('0'::[]))))), (UBind
       (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))), (UUnop
       ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
       ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UBind
@@ -1999,13 +2012,33 @@ module Router =
       ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
       0)))),
       (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ 0)))) r_addr2)))), (UBind (('m'::('0'::[])), (USugar
-      (UCallModule ((Obj.magic id), (Obj.magic lift_self),
-      (Obj.magic r0_receive), []))), (UBind (('m'::('1'::[])), (USugar
-      (UCallModule ((Obj.magic id), (Obj.magic lift_self),
-      (Obj.magic r1_receive), []))), (UBind (('m'::('s'::('g'::[]))), (UUnop
-      ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t Types.basic_flit))),
-      (UVar ('m'::('0'::[]))))), (UBind
+        (Stdlib.Int.succ 0)))) r_addr2)))), (UBind (('m'::('0'::[])), (UBinop
+      ((PrimUntyped.UBits2 PrimUntyped.UXor), (USugar (UCallModule
+      ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_receive), []))),
+      (UExternalCall (Tile_In, (USugar (UConstBits ((Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ 0)))))))))))))),
+      (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
+      (UBind (('m'::('1'::[])), (UBinop ((PrimUntyped.UBits2
+      PrimUntyped.UXor), (USugar (UCallModule ((Obj.magic id),
+      (Obj.magic lift_self), (Obj.magic r1_receive), []))), (UExternalCall
+      (Tile_In, (USugar (UConstBits ((Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      0)))))))))))))),
+      (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
+      (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+      (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
+      ('m'::('0'::[]))))), (UBind
       (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))), (UUnop
       ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
       ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UBind
@@ -2120,11 +2153,21 @@ module Router =
       ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
       0)))),
       (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ 0)))) r_addr2)))), (UBind (('m'::('0'::[])), (USugar
-      (UCallModule ((Obj.magic id), (Obj.magic lift_self),
-      (Obj.magic r0_receive), []))), (UBind (('m'::('s'::('g'::[]))), (UUnop
-      ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t Types.basic_flit))),
-      (UVar ('m'::('0'::[]))))), (UBind
+        (Stdlib.Int.succ 0)))) r_addr2)))), (UBind (('m'::('0'::[])), (UBinop
+      ((PrimUntyped.UBits2 PrimUntyped.UXor), (USugar (UCallModule
+      ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_receive), []))),
+      (UExternalCall (Tile_In, (USugar (UConstBits ((Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+      (Stdlib.Int.succ 0)))))))))))))),
+      (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
+      (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+      (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
+      ('m'::('0'::[]))))), (UBind
       (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))), (UUnop
       ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
       ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UBind
@@ -2244,10 +2287,21 @@ module NOCImpl =
            ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
            (Stdlib.Int.succ 0)))),
            (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ 0)))) 0)))), (UBind (('m'::('0'::[])), (USugar
-           (UCallModule (id, (Obj.magic lift_self),
-           (Obj.magic Routerfns.r_receive Coq_r1), []))), (UBind
-           (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+             (Stdlib.Int.succ 0)))) 0)))), (UBind (('m'::('0'::[])), (UBinop
+           ((PrimUntyped.UBits2 PrimUntyped.UXor), (USugar (UCallModule (id,
+           (Obj.magic lift_self), (Obj.magic Routerfns.r_receive Coq_r1),
+           []))), (UExternalCall (Routerfns.Tile_In, (USugar (UConstBits
+           ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))),
+           (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
+           (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
            (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
            ('m'::('0'::[]))))), (UBind
            (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
@@ -2307,11 +2361,35 @@ module NOCImpl =
            (Stdlib.Int.succ 0)))),
            (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
              (Stdlib.Int.succ 0)))) (Stdlib.Int.succ 0))))), (UBind
-           (('m'::('0'::[])), (USugar (UCallModule (id,
-           (Obj.magic lift_self), (Obj.magic Routerfns.r_receive Coq_r1),
-           []))), (UBind (('m'::('1'::[])), (USugar (UCallModule (id,
+           (('m'::('0'::[])), (UBinop ((PrimUntyped.UBits2 PrimUntyped.UXor),
+           (USugar (UCallModule (id, (Obj.magic lift_self),
+           (Obj.magic Routerfns.r_receive Coq_r1), []))), (UExternalCall
+           (Routerfns.Tile_In, (USugar (UConstBits ((Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ 0)))))))))))))),
+           (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
+           (UBind (('m'::('1'::[])), (UBinop ((PrimUntyped.UBits2
+           PrimUntyped.UXor), (USugar (UCallModule (id,
            (Obj.magic lift_self), (Obj.magic Routerfns.r_receive Coq_r2),
-           []))), (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+           []))), (UExternalCall (Routerfns.Tile_In, (USugar (UConstBits
+           ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))),
+           (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
+           (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
            (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
            ('m'::('0'::[]))))), (UBind
            (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
@@ -2442,11 +2520,35 @@ module NOCImpl =
            (Stdlib.Int.succ 0)))),
            (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
              (Stdlib.Int.succ 0)))) (Stdlib.Int.succ (Stdlib.Int.succ 0)))))),
-           (UBind (('m'::('0'::[])), (USugar (UCallModule (id,
+           (UBind (('m'::('0'::[])), (UBinop ((PrimUntyped.UBits2
+           PrimUntyped.UXor), (USugar (UCallModule (id,
            (Obj.magic lift_self), (Obj.magic Routerfns.r_receive Coq_r2),
-           []))), (UBind (('m'::('1'::[])), (USugar (UCallModule (id,
+           []))), (UExternalCall (Routerfns.Tile_In, (USugar (UConstBits
+           ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))),
+           (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
+           (UBind (('m'::('1'::[])), (UBinop ((PrimUntyped.UBits2
+           PrimUntyped.UXor), (USugar (UCallModule (id,
            (Obj.magic lift_self), (Obj.magic Routerfns.r_receive Coq_r3),
-           []))), (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+           []))), (UExternalCall (Routerfns.Tile_In, (USugar (UConstBits
+           ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))),
+           (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
+           (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
            (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
            ('m'::('0'::[]))))), (UBind
            (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
@@ -2577,10 +2679,21 @@ module NOCImpl =
            (Stdlib.Int.succ 0)))),
            (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
              (Stdlib.Int.succ 0)))) (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ 0))))))), (UBind (('m'::('0'::[])), (USugar
-           (UCallModule (id, (Obj.magic lift_self),
-           (Obj.magic Routerfns.r_receive Coq_r3), []))), (UBind
-           (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+             (Stdlib.Int.succ 0))))))), (UBind (('m'::('0'::[])), (UBinop
+           ((PrimUntyped.UBits2 PrimUntyped.UXor), (USugar (UCallModule (id,
+           (Obj.magic lift_self), (Obj.magic Routerfns.r_receive Coq_r3),
+           []))), (UExternalCall (Routerfns.Tile_In, (USugar (UConstBits
+           ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+           (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))),
+           (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
+           (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
            (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
            ('m'::('0'::[]))))), (UBind
            (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),

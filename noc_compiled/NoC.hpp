@@ -238,76 +238,74 @@ return true;
 
 DECL_FN(r_send_0, unit)
 DEF_FN(r_send_0, unit &_ret, bits<14> value) {
-bits<14> _y0 = extfuns.tile_in(1'0_b);
-WRITE0(r2, (value ^ _y0));
+WRITE0(r2, value);
 _ret = prims::tt;
 return true;
 }
 
 DECL_FN(r_send_1, unit)
 DEF_FN(r_send_1, unit &_ret, bits<14> value) {
-bits<14> _y1 = extfuns.tile_in(1'0_b);
-WRITE0(r3, (value ^ _y1));
+WRITE0(r3, value);
 _ret = prims::tt;
 return true;
 }
 
 DECL_FN(r_send_2, unit)
 DEF_FN(r_send_2, unit &_ret, bits<14> value) {
-bits<14> _y2 = extfuns.tile_in(1'0_b);
-WRITE0(r2, (value ^ _y2));
+WRITE0(r2, value);
 _ret = prims::tt;
 return true;
 }
 
 DECL_FN(r_send_3, unit)
 DEF_FN(r_send_3, unit &_ret, bits<14> value) {
-bits<14> _y3 = extfuns.tile_in(1'0_b);
-WRITE0(r3, (value ^ _y3));
+WRITE0(r3, value);
 _ret = prims::tt;
 return true;
 }
 
 DECL_FN(r_send_4, unit)
 DEF_FN(r_send_4, unit &_ret, bits<14> value) {
-bits<14> _y4 = extfuns.tile_in(1'0_b);
-WRITE0(r3, (value ^ _y4));
+WRITE0(r3, value);
 _ret = prims::tt;
 return true;
 }
 
 DECL_FN(r_send_5, unit)
 DEF_FN(r_send_5, unit &_ret, bits<14> value) {
-bits<14> _y5 = extfuns.tile_in(1'0_b);
-WRITE0(r2, (value ^ _y5));
+WRITE0(r2, value);
 _ret = prims::tt;
 return true;
 }
 DEF_RULE(router_3) {
 bits<4> r_addr = 4'0010_b;
 bits<14> m0 = CALL_FN(r_receive_0);
+bits<14> _y0 = extfuns.tile_in(14'0_b);
+m0 = (m0 ^ _y0);
 bits<14> m1 = CALL_FN(r_receive_1);
+bits<14> _y1 = extfuns.tile_in(14'0_b);
+m1 = (m1 ^ _y1);
 struct_basic_flit msg = prims::unpack<struct_basic_flit>(m0);
 bits<1> new_data = msg.renamed_cppnew;
 bits<4> src_p = msg.src;
 if (((src_p != r_addr) & new_data)) {
-struct_basic_flit _x10 = msg;
-_x10.renamed_cppnew = 1'0_b;
-CALL_FN(r_send_0, prims::pack(_x10));
+struct_basic_flit _x6 = msg;
+_x6.renamed_cppnew = 1'0_b;
+CALL_FN(r_send_0, prims::pack(_x6));
 bits<2> trg_x = msg.trg_x;
 bits<2> trg_y = msg.trg_y;
 bits<2> src_x = prims::unpack<struct_router_address>(r_addr).x;
 bits<2> src_y = prims::unpack<struct_router_address>(r_addr).y;
 if ((trg_x > src_x)) {
-struct_basic_flit _x18 = msg;
-_x18.src = r_addr;
-CALL_FN(r_send_1, prims::pack(_x18));
+struct_basic_flit _x14 = msg;
+_x14.src = r_addr;
+CALL_FN(r_send_1, prims::pack(_x14));
 }
 else {
 if ((trg_x < src_x)) {
-struct_basic_flit _x20 = msg;
-_x20.src = r_addr;
-CALL_FN(r_send_2, prims::pack(_x20));
+struct_basic_flit _x16 = msg;
+_x16.src = r_addr;
+CALL_FN(r_send_2, prims::pack(_x16));
 }
 else {
 bits<14> _value3 = extfuns.tile_out(m0);
@@ -320,23 +318,23 @@ struct_basic_flit msg1 = prims::unpack<struct_basic_flit>(m1);
 bits<1> new_data = msg1.renamed_cppnew;
 bits<4> src_p = msg1.src;
 if (((src_p != r_addr) & new_data)) {
-struct_basic_flit _x26 = msg1;
-_x26.renamed_cppnew = 1'0_b;
-CALL_FN(r_send_3, prims::pack(_x26));
+struct_basic_flit _x22 = msg1;
+_x22.renamed_cppnew = 1'0_b;
+CALL_FN(r_send_3, prims::pack(_x22));
 bits<2> trg_x = msg1.trg_x;
 bits<2> trg_y = msg1.trg_y;
 bits<2> src_x = prims::unpack<struct_router_address>(r_addr).x;
 bits<2> src_y = prims::unpack<struct_router_address>(r_addr).y;
 if ((trg_x > src_x)) {
-struct_basic_flit _x34 = msg1;
-_x34.src = r_addr;
-CALL_FN(r_send_4, prims::pack(_x34));
+struct_basic_flit _x30 = msg1;
+_x30.src = r_addr;
+CALL_FN(r_send_4, prims::pack(_x30));
 }
 else {
 if ((trg_x < src_x)) {
-struct_basic_flit _x36 = msg1;
-_x36.src = r_addr;
-CALL_FN(r_send_5, prims::pack(_x36));
+struct_basic_flit _x32 = msg1;
+_x32.src = r_addr;
+CALL_FN(r_send_5, prims::pack(_x32));
 }
 else {
 bits<14> _value7 = extfuns.tile_out(m1);
@@ -369,14 +367,15 @@ return true;
 
 DECL_FN(r_send_6, unit)
 DEF_FN(r_send_6, unit &_ret, bits<14> value) {
-bits<14> _y0 = extfuns.tile_in(1'0_b);
-WRITE0(r3, (value ^ _y0));
+WRITE0(r3, value);
 _ret = prims::tt;
 return true;
 }
 DEF_RULE(router_4) {
 bits<4> r_addr = 4'0011_b;
 bits<14> m0 = CALL_FN(r_receive_2);
+bits<14> _y0 = extfuns.tile_in(14'0_b);
+m0 = (m0 ^ _y0);
 struct_basic_flit msg = prims::unpack<struct_basic_flit>(m0);
 bits<1> new_data = msg.renamed_cppnew;
 bits<4> src_p = msg.src;
@@ -424,14 +423,15 @@ return true;
 
 DECL_FN(r_send_7, unit)
 DEF_FN(r_send_7, unit &_ret, bits<14> value) {
-bits<14> _y0 = extfuns.tile_in(1'0_b);
-WRITE0(r1, (value ^ _y0));
+WRITE0(r1, value);
 _ret = prims::tt;
 return true;
 }
 DEF_RULE(router_1) {
 bits<4> r_addr = 4'0000_b;
 bits<14> m0 = CALL_FN(r_receive_3);
+bits<14> _y0 = extfuns.tile_in(14'0_b);
+m0 = (m0 ^ _y0);
 struct_basic_flit msg = prims::unpack<struct_basic_flit>(m0);
 bits<1> new_data = msg.renamed_cppnew;
 bits<4> src_p = msg.src;
@@ -489,76 +489,74 @@ return true;
 
 DECL_FN(r_send_8, unit)
 DEF_FN(r_send_8, unit &_ret, bits<14> value) {
-bits<14> _y0 = extfuns.tile_in(1'0_b);
-WRITE0(r1, (value ^ _y0));
+WRITE0(r1, value);
 _ret = prims::tt;
 return true;
 }
 
 DECL_FN(r_send_9, unit)
 DEF_FN(r_send_9, unit &_ret, bits<14> value) {
-bits<14> _y1 = extfuns.tile_in(1'0_b);
-WRITE0(r2, (value ^ _y1));
+WRITE0(r2, value);
 _ret = prims::tt;
 return true;
 }
 
 DECL_FN(r_send_10, unit)
 DEF_FN(r_send_10, unit &_ret, bits<14> value) {
-bits<14> _y2 = extfuns.tile_in(1'0_b);
-WRITE0(r1, (value ^ _y2));
+WRITE0(r1, value);
 _ret = prims::tt;
 return true;
 }
 
 DECL_FN(r_send_11, unit)
 DEF_FN(r_send_11, unit &_ret, bits<14> value) {
-bits<14> _y3 = extfuns.tile_in(1'0_b);
-WRITE0(r2, (value ^ _y3));
+WRITE0(r2, value);
 _ret = prims::tt;
 return true;
 }
 
 DECL_FN(r_send_12, unit)
 DEF_FN(r_send_12, unit &_ret, bits<14> value) {
-bits<14> _y4 = extfuns.tile_in(1'0_b);
-WRITE0(r2, (value ^ _y4));
+WRITE0(r2, value);
 _ret = prims::tt;
 return true;
 }
 
 DECL_FN(r_send_13, unit)
 DEF_FN(r_send_13, unit &_ret, bits<14> value) {
-bits<14> _y5 = extfuns.tile_in(1'0_b);
-WRITE0(r1, (value ^ _y5));
+WRITE0(r1, value);
 _ret = prims::tt;
 return true;
 }
 DEF_RULE(router_2) {
 bits<4> r_addr = 4'0001_b;
 bits<14> m0 = CALL_FN(r_receive_4);
+bits<14> _y0 = extfuns.tile_in(14'0_b);
+m0 = (m0 ^ _y0);
 bits<14> m1 = CALL_FN(r_receive_5);
+bits<14> _y1 = extfuns.tile_in(14'0_b);
+m1 = (m1 ^ _y1);
 struct_basic_flit msg = prims::unpack<struct_basic_flit>(m0);
 bits<1> new_data = msg.renamed_cppnew;
 bits<4> src_p = msg.src;
 if (((src_p != r_addr) & new_data)) {
-struct_basic_flit _x10 = msg;
-_x10.renamed_cppnew = 1'0_b;
-CALL_FN(r_send_8, prims::pack(_x10));
+struct_basic_flit _x6 = msg;
+_x6.renamed_cppnew = 1'0_b;
+CALL_FN(r_send_8, prims::pack(_x6));
 bits<2> trg_x = msg.trg_x;
 bits<2> trg_y = msg.trg_y;
 bits<2> src_x = prims::unpack<struct_router_address>(r_addr).x;
 bits<2> src_y = prims::unpack<struct_router_address>(r_addr).y;
 if ((trg_x > src_x)) {
-struct_basic_flit _x18 = msg;
-_x18.src = r_addr;
-CALL_FN(r_send_9, prims::pack(_x18));
+struct_basic_flit _x14 = msg;
+_x14.src = r_addr;
+CALL_FN(r_send_9, prims::pack(_x14));
 }
 else {
 if ((trg_x < src_x)) {
-struct_basic_flit _x20 = msg;
-_x20.src = r_addr;
-CALL_FN(r_send_10, prims::pack(_x20));
+struct_basic_flit _x16 = msg;
+_x16.src = r_addr;
+CALL_FN(r_send_10, prims::pack(_x16));
 }
 else {
 bits<14> _value3 = extfuns.tile_out(m0);
@@ -571,23 +569,23 @@ struct_basic_flit msg1 = prims::unpack<struct_basic_flit>(m1);
 bits<1> new_data = msg1.renamed_cppnew;
 bits<4> src_p = msg1.src;
 if (((src_p != r_addr) & new_data)) {
-struct_basic_flit _x26 = msg1;
-_x26.renamed_cppnew = 1'0_b;
-CALL_FN(r_send_11, prims::pack(_x26));
+struct_basic_flit _x22 = msg1;
+_x22.renamed_cppnew = 1'0_b;
+CALL_FN(r_send_11, prims::pack(_x22));
 bits<2> trg_x = msg1.trg_x;
 bits<2> trg_y = msg1.trg_y;
 bits<2> src_x = prims::unpack<struct_router_address>(r_addr).x;
 bits<2> src_y = prims::unpack<struct_router_address>(r_addr).y;
 if ((trg_x > src_x)) {
-struct_basic_flit _x34 = msg1;
-_x34.src = r_addr;
-CALL_FN(r_send_12, prims::pack(_x34));
+struct_basic_flit _x30 = msg1;
+_x30.src = r_addr;
+CALL_FN(r_send_12, prims::pack(_x30));
 }
 else {
 if ((trg_x < src_x)) {
-struct_basic_flit _x36 = msg1;
-_x36.src = r_addr;
-CALL_FN(r_send_13, prims::pack(_x36));
+struct_basic_flit _x32 = msg1;
+_x32.src = r_addr;
+CALL_FN(r_send_13, prims::pack(_x32));
 }
 else {
 bits<14> _value7 = extfuns.tile_out(m1);

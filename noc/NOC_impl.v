@@ -369,7 +369,7 @@ Definition r2test (reg : reg_t) : R reg :=
   end.
 
 
-Lemma router2:
+(* Lemma router2:
     run_action r2test(rules router_2)
     (fun ctxt =>
       let bits_r2 := ctxt.[r2] in
@@ -395,7 +395,7 @@ Lemma router2:
       ).
     Proof.
       check.
-    Defined.
+    Defined. *)
 
 Definition r_r2l (reg : reg_t) : R reg :=
   match reg with

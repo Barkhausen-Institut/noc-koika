@@ -220,6 +220,10 @@ type type_denote = __
 
 type 'argKind _Sig = { argSigs : 'argKind vect; retSig : 'argKind }
 
+type ('argKind, 'type_of_argKind) _Sig_denote = __
+
+type sig_denote = (type0, type_denote) _Sig_denote
+
 val cSig_of_Sig : int -> type0 _Sig -> int _Sig
 
 val sig_of_CSig : int -> int _Sig -> type0 _Sig
@@ -699,6 +703,8 @@ module Router :
 
   val coq_Sigma : ext_fn_t -> externalSignature
 
+  val sigma_denote : ext_fn_t -> sig_denote
+
   val r_send :
     Regs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
     ext_fn_t) uaction) internalFunction
@@ -773,6 +779,8 @@ module NOCImpl :
     val ext_fn_t_rec : 'a1 -> 'a1 -> ext_fn_t -> 'a1
 
     val coq_Sigma : ext_fn_t -> externalSignature
+
+    val sigma_denote : ext_fn_t -> sig_denote
 
     val r_send :
       MyRegs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
