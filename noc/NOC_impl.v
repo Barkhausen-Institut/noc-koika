@@ -18,6 +18,7 @@ Open Scope bs.
 Definition regno := (Nat.sub nocsize 1).
 Definition regprefix := "r".
 Definition ruleprefix := "router_".
+Definition extfnprefix := "extfn_".
 
 Fixpoint rev {A : Type} (l:list A) : list A :=
     match l with
@@ -75,7 +76,14 @@ Fixpoint nat_to_term (n : nat) : term :=
           |} 1 []) [nat_to_term n']
   end.
 
-
+  Definition generate_ext_fn_args (n:nat):=
+    tConstruct
+               {|
+                 inductive_mind :=
+                   (MPdot (MPfile ["NOC_impl"]) "NOCImpl", "ext_fn_t");
+                 inductive_ind := 0
+               |} n [].
+  
   Fixpoint generate_branches (n:nat): list (branch term) :=
     match n with
     | 0 => []
@@ -92,7 +100,8 @@ Fixpoint nat_to_term (n : nat) : term :=
                     (MPdot (MPfile ["NOC_impl"%bs])
                         "NOCImpl"%bs, "reg_t"%bs);
                   inductive_ind := 0
-                |} 0 []]|} in
+                |} 0 [];
+                generate_ext_fn_args 0; generate_ext_fn_args 1]|} in
     [branchterm]
     | S n' => let branchterm := {|
     bcontext := [];
@@ -114,7 +123,8 @@ Fixpoint nat_to_term (n : nat) : term :=
                (MPdot (MPfile ["NOC_impl"%bs])
                   "NOCImpl"%bs, "reg_t"%bs);
              inductive_ind := 0
-           |} n' []]
+           |} n' [];
+           generate_ext_fn_args (Nat.mul 2 n'); generate_ext_fn_args (Nat.add (Nat.mul 2 n') 1)]
   |} in
   branchterm :: generate_branches n'
     end.
@@ -137,7 +147,8 @@ Fixpoint nat_to_term (n : nat) : term :=
               (MPdot (MPfile ["NOC_impl"%bs])
                   "NOCImpl"%bs, "reg_t"%bs);
             inductive_ind := 0
-          |} (Nat.sub nocsize 2) []]
+          |} (Nat.sub nocsize 2) [];
+          generate_ext_fn_args (Nat.sub (Nat.mul 2 nocsize) 2); generate_ext_fn_args (Nat.sub (Nat.mul 2 nocsize) 1)]
   |} in
     l ++ [last_term]
     end.
@@ -169,31 +180,22 @@ Definition match_syn := (tLambda {| binder_name := nNamed "rl"%bs; binder_releva
      pparams := [];
      pcontext :=
        [{| binder_name := nNamed "rl"%bs; binder_relevance := Relevant |}];
-     preturn :=
+       preturn :=
        tApp
          (tInd
             {|
-              inductive_mind :=
-                (MPfile ["Syntax"%bs; "Koika"%bs], "uaction"%bs);
+              inductive_mind := (MPfile ["Syntax"; "Koika"], "uaction");
               inductive_ind := 0
             |} [])
-         [tConst (MPfile ["Frontend"%bs; "Koika"%bs], "pos_t"%bs) [];
-          tConst (MPfile ["Frontend"%bs; "Koika"%bs], "var_t"%bs) [];
-          tConst (MPfile ["Frontend"%bs; "Koika"%bs], "fn_name_t"%bs) [];
-          tInd
-            {|
-              inductive_mind :=
-                (MPdot (MPfile ["NOC_impl"%bs])
-                   "NOCImpl"%bs, "reg_t"%bs);
-              inductive_ind := 0
-            |} [];
-          tInd
-            {|
-            inductive_mind :=
-            (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "Routerfns",
-             "ext_fn_t");
-              inductive_ind := 0
-            |} []]
+         [tConst (MPfile ["Frontend"; "Koika"], "pos_t") [];
+          tConst (MPfile ["Frontend"; "Koika"], "var_t") [];
+          tConst (MPfile ["Frontend"; "Koika"], "fn_name_t") [];
+          tConst
+            (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "MyRegs",
+             "reg_t") [];
+          tConst
+            (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "MyRegs",
+             "ext_fn_t") []]
    |} (tRel 0)
      branch_body
      )).
@@ -258,17 +260,28 @@ Module NOC_syn := NOCSyntax(MyNOCSize).
 Import NOC_syn.
 Import MyNOCSize.
 Import Types.
+
+Definition interfacesize := Nat.mul nocsize 2.
+
 MetaCoq Run (
   tmMkInductive' (quoteind "reg_t" regprefix regno) ;;
-  tmMkInductive' (quoteind "rule_name_t" ruleprefix nocsize)
+  tmMkInductive' (quoteind "rule_name_t" ruleprefix nocsize);;
+  tmMkInductive' (quoteind "ext_fn_t" extfnprefix interfacesize)
 ).
 
 Print reg_t.
 Print rule_name_t.
+Print ext_fn_t.
 
 Module MyRegs <: Registers.
 Definition reg_t:=reg_t.
+Definition ext_fn_t:= ext_fn_t.
 End MyRegs.
+
+Definition Sigma (fn: ext_fn_t) : ExternalSignature :=
+  match fn with
+  | _ => {$ bits_t sz ~> bits_t sz $}
+  end.
 
 Module Routerfns:= Router(MyRegs).
 Import Routerfns.
@@ -281,14 +294,13 @@ Definition r (reg : reg_t) : R reg :=
   match reg with
   |  _ => Bits.zero
   end.
-Print ext_fn_t.
 
  (* Definition to_action (rl: rule_name_t) := 
   match rl with
-  | router_1 => routestartfn 0 r1
-  | router_2 => routecenterfn 1 r1 r2
-  | router_3 => routecenterfn 2 r2 r3
-  | router_4 => routeendfn 3 r3
+  | router_1 => routestartfn 0 r1 extfn_1 extfn_2
+  | router_2 => routecenterfn 1 r1 r2 extfn_3 extfn_4
+  | router_3 => routecenterfn 2 r2 r3 extfn_5 extfn_6
+  | router_4 => routeendfn 3 r3 extfn_7 extfn_8
   end.
 
 Check to_action.
@@ -298,6 +310,8 @@ Print testl.  *)
 
 MetaCoq Run ( tmMkDefinition "to_action"%bs match_syn).  
 
+Print to_action.
+
 MetaCoq Run ( tmMkDefinition "schedule"%bs scheduler_synatx). 
 
 Print _routestart_r.
@@ -306,21 +320,6 @@ Definition external (r: rule_name_t) := false.
 
 Definition rules :=
   tc_rules R Sigma to_action.
-
-  (* Definition cpp_extfuns := "class extfuns {
-public:
-  static bits<32> tile_intf(bits<32> st) {
-    return st;
-  }
-};"%string. *)
-
-Definition ext_fn_names fn :=
-  match fn with
-  | Tile_In => "tile_in"%string
-  | Tile_Out => "tile_out"%string
-  end. 
-
-
 
   Definition package :=
     {|
@@ -336,11 +335,11 @@ Definition ext_fn_names fn :=
     |};
     
     ip_sim := {| sp_ext_fn_specs fn :=
-    {| efs_name := ext_fn_names fn;
+    {| efs_name := show fn;
        efs_method := false |};
   sp_prelude := None |};
   ip_verilog := {| vp_ext_fn_specs fn :=
-  {| efr_name := ext_fn_names fn;
+  {| efr_name := show fn;
      efr_internal := false
         |} |}
     |}.

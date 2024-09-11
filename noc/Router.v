@@ -5,27 +5,13 @@ Require Import Koika.Testing.
 
 Module Type Registers.
 Parameter reg_t : Type.
+Parameter ext_fn_t: Type.
 End Registers.
 
 Module Router (Regs:Registers).
 Import Regs.
 Import Types.
 
-Inductive ext_fn_t :=
-| Tile_In
-| Tile_Out.
-
-Definition Sigma (fn: ext_fn_t) : ExternalSignature :=
-  match fn with
-  | Tile_In => {$ bits_t sz ~> bits_t sz $}
-  | Tile_Out => {$ bits_t sz ~> bits_t sz $}
-  end.
-
-  Definition sigma_denote fn : Sig_denote (Sigma fn) :=
-  match fn with
-  | Tile_In => fun x => x
-  | Tile_Out => fun x => x
-  end.
 
 Definition r_send (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
   {{ fun r_send (value: bits_t sz) : unit_t =>
@@ -37,7 +23,7 @@ Definition r_receive (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
       read0(reg_name)
   }}.
 
-Definition _routestart_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg_t ext_fn_t) 
+Definition _routestart_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg_t ext_fn_t) (Tile_In Tile_Out : ext_fn_t)
 : uaction reg_t ext_fn_t :=
 UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
 {{
@@ -63,7 +49,9 @@ UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
     pass ))
 }}.
   
+(* Router needs to decide which packet will go first then send the packet*)
 Definition _routecenter_r (r_addr2: nat) (r0_send r1_send r0_receive r1_receive: UInternalFunction reg_t ext_fn_t) 
+(Tile_In Tile_Out : ext_fn_t)
 : uaction reg_t ext_fn_t :=
   UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
   {{
@@ -84,7 +72,7 @@ Definition _routecenter_r (r_addr2: nat) (r0_send r1_send r0_receive r1_receive:
       else if trg_x < src_x then
       r0_send(pack(subst(msg, src, r_addr)))
       else
-      r0_send(extcall Tile_Out(m0)) 
+      r0_send(extcall Tile_Out(m1)) 
   else
   pass ));
   let msg1 := unpack(struct_t basic_flit, m1) in
@@ -102,13 +90,14 @@ Definition _routecenter_r (r_addr2: nat) (r0_send r1_send r0_receive r1_receive:
       else if trg_x < src_x then
       r0_send(pack(subst(msg1, src, r_addr)))
       else
-      r0_send(extcall Tile_Out(m1))
+      pass
   else
   pass ))
 
   }}.
 
 Definition _routeend_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg_t ext_fn_t) 
+(Tile_In Tile_Out : ext_fn_t)
 : uaction reg_t ext_fn_t :=
   UBind "r_addr" (USugar (UConstBits (Bits.of_nat 4 r_addr2)))
   {{
@@ -132,14 +121,14 @@ Definition _routeend_r (r_addr2: nat) (r0_send r0_receive: UInternalFunction reg
   pass ))
   }}.
 
-Definition routecenterfn (n:nat) (r1 r2 : reg_t): uaction reg_t ext_fn_t :=
-  _routecenter_r n (r_send r1) (r_send r2) (r_receive r1) (r_receive r2).
+Definition routecenterfn (n:nat) (r1 r2 : reg_t) (e1 e2: ext_fn_t): uaction reg_t ext_fn_t :=
+  _routecenter_r n (r_send r1) (r_send r2) (r_receive r1) (r_receive r2) e1 e2.
 
-Definition routestartfn (n:nat) (r1 : reg_t): uaction reg_t ext_fn_t :=
-  _routestart_r n (r_send r1) (r_receive r1). 
+Definition routestartfn (n:nat) (r1 : reg_t) (e1 e2: ext_fn_t): uaction reg_t ext_fn_t :=
+  _routestart_r n (r_send r1) (r_receive r1) e1 e2. 
 
-Definition routeendfn (n:nat) (r1 : reg_t): uaction reg_t ext_fn_t :=
-  _routeend_r n (r_send r1) (r_receive r1).
+Definition routeendfn (n:nat) (r1 : reg_t) (e1 e2: ext_fn_t): uaction reg_t ext_fn_t :=
+  _routeend_r n (r_send r1) (r_receive r1) e1 e2.
 
 
 End Router.
