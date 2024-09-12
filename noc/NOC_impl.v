@@ -389,12 +389,12 @@ Import NOCImpl.
 
 (*8809 -> 10001001101001*)
 
-Definition r2test (reg : reg_t) : R reg :=
+(* Definition r2test (reg : reg_t) : R reg :=
   match reg with
   |  r1 => Bits.of_nat 14 8257 
   |  r2 => Bits.zero
   |  r3 => Bits.zero
-  end.
+  end. *)
 
 
 (* Lemma router2:
@@ -424,57 +424,130 @@ Definition r2test (reg : reg_t) : R reg :=
     Proof.
       check.
     Defined. *)
+Definition sigdenote fn : Sig_denote (Sigma fn) :=
+  match fn with
+  | _ => fun x => x +b (Bits.of_nat 9 0)
+  end.
 
 Definition r_r2l (reg : reg_t) : R reg :=
   match reg with
-  |  r1 => Bits.zero 
+  |  r1 => Bits.zero
   |  r2 => Bits.zero
-  |  r3 => Bits.of_nat 14 9729
+  |  r3 => Bits.of_nat 9 448  
+  |  _ => Bits.zero
   end.
 
+(* Definition schedule2 : scheduler :=
+  router_1 |> router_2 |> done. *)
 Goal
-run_schedule r_r2l rules Sigma schedule
+run_schedule r_r2l rules sigdenote schedule
 (fun ctxt =>
 let r' := (fun idx => 
 match idx with
   | r1=> ctxt.[r1]
   | r2=> ctxt.[r2]
   | r3=> ctxt.[r3]
+  | r4=> ctxt.[r4]
+  | r5=> ctxt.[r5]
+  | r6=> ctxt.[r6]
+  | r7=> ctxt.[r7]
   end ) in
 
-run_schedule r' rules Sigma schedule
+run_schedule r' rules sigdenote schedule
 (fun ctxt2 =>
 let bits_r0 := ctxt2.[r1] in
-Bits.to_nat bits_r0 = 8705)).
+Bits.to_nat bits_r0 = 320)).
   Proof.
     check.
   Defined.
+
 
 
 (*8289 = 1 0000 0011 00001*)
 Definition r_l2r (reg : reg_t) : R reg :=
   match reg with
-  |  r1 => Bits.of_nat 14 8289 
+  |  r1 => Bits.of_nat 9 304 
   |  r2 => Bits.zero
   |  r3 => Bits.zero
+  | _ => Bits.zero
   end.
 
 Goal
-run_schedule r_l2r rules Sigma schedule
+run_schedule r_l2r rules sigdenote schedule
 (fun ctxt =>
 let r' := (fun idx => 
 match idx with
-  | r1=> ctxt.[r1]
-  | r2=> ctxt.[r2]
-  | r3=> ctxt.[r3]
+| r1=> ctxt.[r1]
+| r2=> ctxt.[r2]
+| r3=> ctxt.[r3]
+| r4=> ctxt.[r4]
+| r5=> ctxt.[r5]
+| r6=> ctxt.[r6]
+| r7=> ctxt.[r7]
   end ) in
 
-run_schedule r' rules Sigma schedule
+run_schedule r' rules sigdenote schedule
 (fun ctxt2 =>
 let bits_r0 := ctxt2.[r3]in
-Bits.to_nat bits_r0 = 9313)).
+Bits.to_nat bits_r0 = 432)).
   Proof.
     check.
   Defined.
+
+
+  (* Definition r_l2r' (reg : reg_t) : R reg :=
+    match reg with
+    |  r1 => Bits.of_nat 9 304 
+    |  r2 => Bits.zero
+    |  r3 => Bits.zero
+    | _ => Bits.zero
+    end.
+
+  Goal
+  run_schedule r_l2r' rules sigdenote schedule
+  (fun ctxt =>
+  let r' := (fun idx => 
+  match idx with
+  | r1=> ctxt.[r1]
+  | r2=> ctxt.[r2]
+  | r3=> ctxt.[r3]
+  | r4=> ctxt.[r4]
+  | r5=> ctxt.[r5]
+  | r6=> ctxt.[r6]
+  | r7=> ctxt.[r7]
+    end ) in
+  
+  run_schedule r' rules sigdenote schedule
+  (fun ctxt2 =>
+  let r'' := (fun idx => 
+  match idx with
+  | r1=> ctxt.[r1]
+  | r2=> ctxt.[r2]
+  | r3=> ctxt.[r3]
+  | r4=> ctxt.[r4]
+  | r5=> ctxt.[r5]
+  | r6=> ctxt.[r6]
+  | r7=> ctxt.[r7]
+    end ) in
+
+    run_schedule r'' rules sigdenote schedule
+(fun ctxt3 =>
+let r''' := (fun idx => 
+match idx with
+| r1=> ctxt.[r1]
+| r2=> ctxt.[r2]
+| r3=> ctxt.[r3]
+| r4=> ctxt.[r4]
+| r5=> ctxt.[r5]
+| r6=> ctxt.[r6]
+| r7=> ctxt.[r7]
+  end ) in
+  run_schedule r''' rules sigdenote schedule
+  (fun ctxt4 =>
+let bits_r0 := ctxt4.[r7]in
+Bits.to_nat bits_r0 = 432)))).
+  Proof.
+    check.
+  Defined. *)
 
 End Proofs.
