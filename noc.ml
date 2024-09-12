@@ -72,6 +72,22 @@ module Nat =
       (fun u -> u)
       n0
 
+  (** val add : int -> int -> int **)
+
+  let rec add n0 m =
+    (fun fO fS n -> if n=0 then fO () else fS (n-1))
+      (fun _ -> m)
+      (fun p -> Stdlib.Int.succ (add p m))
+      n0
+
+  (** val mul : int -> int -> int **)
+
+  let rec mul n0 m =
+    (fun fO fS n -> if n=0 then fO () else fS (n-1))
+      (fun _ -> 0)
+      (fun p -> add m (mul p m))
+      n0
+
   (** val compare : int -> int -> comparison **)
 
   let rec compare = fun n m -> if n=m then Eq else if n<m then Lt else Gt
@@ -1836,15 +1852,27 @@ type var_t = char list
 
 type fn_name_t = char list
 
+module type Typesize =
+ sig
+  val nocsize : int
+
+  val data_sz : int
+ end
+
 module Types =
+ functor (TS:Typesize) ->
  struct
+  (** val addr_sz : int **)
+
+  let addr_sz =
+    Nat.log2_up TS.nocsize
+
   (** val sz : int **)
 
   let sz =
-    Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))
+    Nat.add
+      (Nat.add (Nat.mul (Stdlib.Int.succ (Stdlib.Int.succ 0)) addr_sz)
+        TS.data_sz) (Stdlib.Int.succ 0)
 
   (** val basic_flit : type0 struct_sig' **)
 
@@ -1852,24 +1880,18 @@ module Types =
     { struct_name =
       ('b'::('a'::('s'::('i'::('c'::('_'::('f'::('l'::('i'::('t'::[]))))))))));
       struct_fields = ((('n'::('e'::('w'::[]))), (Bits_t (Stdlib.Int.succ
-      0))) :: ((('s'::('r'::('c'::[]))), (Bits_t (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      0)))))) :: ((('t'::('r'::('g'::('_'::('y'::[]))))), (Bits_t
-      (Stdlib.Int.succ (Stdlib.Int.succ
-      0)))) :: ((('t'::('r'::('g'::('_'::('x'::[]))))), (Bits_t
-      (Stdlib.Int.succ (Stdlib.Int.succ
-      0)))) :: ((('d'::('a'::('t'::('a'::[])))), (Bits_t (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      0))))))) :: []))))) }
+      0))) :: ((('s'::('r'::('c'::[]))), (Bits_t
+      addr_sz)) :: ((('d'::('e'::('s'::('t'::[])))), (Bits_t
+      addr_sz)) :: ((('d'::('a'::('t'::('a'::[])))), (Bits_t
+      TS.data_sz)) :: [])))) }
 
   (** val router_address : type0 struct_sig' **)
 
   let router_address =
     { struct_name =
       ('r'::('o'::('u'::('t'::('e'::('r'::('_'::('a'::('d'::('d'::('r'::('e'::('s'::('s'::[]))))))))))))));
-      struct_fields = ((('y'::[]), (Bits_t (Stdlib.Int.succ (Stdlib.Int.succ
-      0)))) :: ((('x'::[]), (Bits_t (Stdlib.Int.succ (Stdlib.Int.succ
-      0)))) :: [])) }
+      struct_fields = ((('r'::('a'::('d'::('d'::('r'::[]))))), (Bits_t
+      addr_sz)) :: []) }
  end
 
 module type Registers =
@@ -1881,7 +1903,10 @@ module type Registers =
 
 module Router =
  functor (Regs:Registers) ->
+ functor (MyTypes:Typesize) ->
  struct
+  module NOC_type = Types(MyTypes)
+
   (** val r_send :
       Regs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
       Regs.ext_fn_t) uaction) internalFunction **)
@@ -1889,7 +1914,7 @@ module Router =
   let r_send reg_name =
     { int_name = ('r'::('_'::('s'::('e'::('n'::('d'::[])))))); int_argspec =
       ((prod_of_argsig { arg_name = ('v'::('a'::('l'::('u'::('e'::[])))));
-         arg_type = (Bits_t Types.sz) }) :: []); int_retSig = (Bits_t 0);
+         arg_type = (Bits_t NOC_type.sz) }) :: []); int_retSig = (Bits_t 0);
       int_body = (UWrite (P0, reg_name, (UVar
       ('v'::('a'::('l'::('u'::('e'::[])))))))) }
 
@@ -1900,35 +1925,48 @@ module Router =
   let r_receive reg_name =
     { int_name =
       ('r'::('_'::('r'::('e'::('c'::('e'::('i'::('v'::('e'::[])))))))));
-      int_argspec = []; int_retSig = (Bits_t Types.sz); int_body = (URead
+      int_argspec = []; int_retSig = (Bits_t NOC_type.sz); int_body = (URead
       (P0, reg_name)) }
+
+  (** val bz : bool vect **)
+
+  let bz =
+    Bits.of_nat NOC_type.sz 0
 
   (** val _routestart_r :
       int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
       Regs.ext_fn_t) uaction) internalFunction -> (var_t, fn_name_t, (pos_t,
       var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction) internalFunction
-      -> Regs.ext_fn_t -> Regs.ext_fn_t -> (pos_t, var_t, fn_name_t,
-      Regs.reg_t, Regs.ext_fn_t) uaction **)
+      -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
+      Regs.ext_fn_t) uaction) internalFunction -> Regs.ext_fn_t ->
+      Regs.ext_fn_t -> (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t)
+      uaction **)
 
-  let _routestart_r r_addr2 r0_send r0_receive tile_In tile_Out =
+  let _routestart_r r_addr2 r0_send r0_receive rtile_send tile_In tile_Out =
     UBind (('r'::('_'::('a'::('d'::('d'::('r'::[])))))), (USugar (UConstBits
-      ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      0)))),
-      (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ 0)))) r_addr2)))), (UBind (('m'::('0'::[])), (UBinop
-      ((PrimUntyped.UBits2 PrimUntyped.UXor), (USugar (UCallModule
-      ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_receive), []))),
-      (UExternalCall (tile_In, (USugar (UConstBits ((Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ 0)))))))))))))),
-      (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
-      (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
-      (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
+      (NOC_type.addr_sz, (Bits.of_nat NOC_type.addr_sz r_addr2)))), (UBind
+      (('m'::('_'::('i'::('n'::('p'::('u'::('t'::[]))))))), (UExternalCall
+      (tile_In, (USugar (UConstBits (NOC_type.sz, bz))))), (UBind
+      (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+      (PrimUntyped.UUnpack (Struct_t NOC_type.basic_flit))), (UVar
+      ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))))), (UBind
+      (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))), (UUnop
+      ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+      ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UBind
+      (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop ((PrimUntyped.UStruct1
+      (PrimUntyped.UGetField ('s'::('r'::('c'::[]))))), (UVar
+      ('m'::('s'::('g'::[])))))), (UIf ((UBinop ((PrimUntyped.UBits2
+      PrimUntyped.UAnd), (UVar
+      ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))), (UBinop
+      ((PrimUntyped.UEq false), (UVar ('s'::('r'::('c'::('_'::('p'::[])))))),
+      (UVar ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (USugar
+      (UCallModule ((Obj.magic id), (Obj.magic lift_self),
+      (Obj.magic r0_send), ((UVar
+      ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))) :: [])))), (UBind
+      (('m'::('0'::[])), (USugar (UCallModule ((Obj.magic id),
+      (Obj.magic lift_self), (Obj.magic r0_receive), []))), (UBind
+      (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+      (PrimUntyped.UUnpack (Struct_t NOC_type.basic_flit))), (UVar
       ('m'::('0'::[]))))), (UBind
       (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))), (UUnop
       ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
@@ -1940,35 +1978,29 @@ module Router =
       ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
       ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UVar
       ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))))), (UBind
-      (('t'::('r'::('g'::('_'::('x'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('t'::('r'::('g'::('_'::('x'::[]))))))), (UVar
-      ('m'::('s'::('g'::[])))))), (UBind
-      (('t'::('r'::('g'::('_'::('y'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('t'::('r'::('g'::('_'::('y'::[]))))))), (UVar
-      ('m'::('s'::('g'::[])))))), (UBind
-      (('s'::('r'::('c'::('_'::('x'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('x'::[]))), (UUnop ((PrimUntyped.UConv
-      (PrimUntyped.UUnpack (Struct_t Types.router_address))), (UVar
-      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UBind
-      (('s'::('r'::('c'::('_'::('y'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('y'::[]))), (UUnop ((PrimUntyped.UConv
-      (PrimUntyped.UUnpack (Struct_t Types.router_address))), (UVar
-      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UIf ((UBinop
-      ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
-      ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-      ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
+      (('d'::('e'::('s'::('t'::[])))), (UUnop ((PrimUntyped.UStruct1
+      (PrimUntyped.UGetField ('d'::('e'::('s'::('t'::[])))))), (UVar
+      ('m'::('s'::('g'::[])))))), (USeq ((UIf ((UBinop ((PrimUntyped.UBits2
+      (PrimUntyped.UCompare (false, CGt))), (UVar
+      ('d'::('e'::('s'::('t'::[]))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar (UCallModule
       ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_send), ((UUnop
       ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
       (PrimUntyped.USubstField ('s'::('r'::('c'::[]))))), (UVar
       ('m'::('s'::('g'::[])))), (UVar
       ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))), (UIf
       ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CLt))),
-      (UVar ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-      ('s'::('r'::('c'::('_'::('x'::[])))))))), (UFail (Bits_t 0)), (USugar
-      (UCallModule ((Obj.magic id), (Obj.magic lift_self),
-      (Obj.magic r0_send), ((UExternalCall (tile_Out, (UVar
-      ('m'::('0'::[]))))) :: [])))))))))))))))), (USugar (UConstBits (0,
-      (Obj.magic __)))))))))))))))
+      (UVar ('d'::('e'::('s'::('t'::[]))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UFail (Bits_t 0)),
+      (USugar (UCallModule ((Obj.magic id), (Obj.magic lift_self),
+      (Obj.magic rtile_send), ((UExternalCall (tile_Out, (UVar
+      ('m'::('0'::[]))))) :: [])))))))), (USugar (UCallModule
+      ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_send), ((UUnop
+      ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
+      (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
+      ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ 0),
+      (Bits.of_N (Stdlib.Int.succ 0) 0)))))))) :: [])))))))), (USugar
+      (UConstBits (0, (Obj.magic __)))))))))))))))))))))))))
 
   (** val _routecenter_r :
       int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
@@ -1977,40 +2009,56 @@ module Router =
       -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
       Regs.ext_fn_t) uaction) internalFunction -> (var_t, fn_name_t, (pos_t,
       var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction) internalFunction
-      -> Regs.ext_fn_t -> Regs.ext_fn_t -> (pos_t, var_t, fn_name_t,
-      Regs.reg_t, Regs.ext_fn_t) uaction **)
+      -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
+      Regs.ext_fn_t) uaction) internalFunction -> Regs.ext_fn_t ->
+      Regs.ext_fn_t -> (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t)
+      uaction **)
 
-  let _routecenter_r r_addr2 r0_send r1_send r0_receive r1_receive tile_In tile_Out =
+  let _routecenter_r r_addr2 r0_send r1_send r0_receive r1_receive rtile_send tile_In tile_Out =
     UBind (('r'::('_'::('a'::('d'::('d'::('r'::[])))))), (USugar (UConstBits
-      ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      0)))),
-      (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ 0)))) r_addr2)))), (UBind (('m'::('0'::[])), (UBinop
-      ((PrimUntyped.UBits2 PrimUntyped.UXor), (USugar (UCallModule
-      ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_receive), []))),
-      (UExternalCall (tile_In, (USugar (UConstBits ((Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ 0)))))))))))))),
-      (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
-      (UBind (('m'::('1'::[])), (UBinop ((PrimUntyped.UBits2
-      PrimUntyped.UXor), (USugar (UCallModule ((Obj.magic id),
-      (Obj.magic lift_self), (Obj.magic r1_receive), []))), (UExternalCall
-      (tile_In, (USugar (UConstBits ((Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      0)))))))))))))),
-      (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
-      (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
-      (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
+      (NOC_type.addr_sz, (Bits.of_nat NOC_type.addr_sz r_addr2)))), (UBind
+      (('m'::('_'::('i'::('n'::('p'::('u'::('t'::[]))))))), (UExternalCall
+      (tile_In, (USugar (UConstBits (NOC_type.sz, bz))))), (UBind
+      (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+      (PrimUntyped.UUnpack (Struct_t NOC_type.basic_flit))), (UVar
+      ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))))), (UBind
+      (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))), (UUnop
+      ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+      ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UBind
+      (('d'::('e'::('s'::('t'::[])))), (UUnop ((PrimUntyped.UStruct1
+      (PrimUntyped.UGetField ('d'::('e'::('s'::('t'::[])))))), (UVar
+      ('m'::('s'::('g'::[])))))), (UBind
+      (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop ((PrimUntyped.UStruct1
+      (PrimUntyped.UGetField ('s'::('r'::('c'::[]))))), (UVar
+      ('m'::('s'::('g'::[])))))), (UIf ((UBinop ((PrimUntyped.UBits2
+      PrimUntyped.UAnd), (UVar
+      ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))), (UBinop
+      ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UBinop ((PrimUntyped.UEq
+      false), (UVar ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UBinop
+      ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
+      ('d'::('e'::('s'::('t'::[]))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))))), (USugar
+      (UCallModule ((Obj.magic id), (Obj.magic lift_self),
+      (Obj.magic r1_send), ((UVar
+      ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))) :: [])))), (UIf
+      ((UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UVar
+      ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))), (UBinop
+      ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UBinop ((PrimUntyped.UEq
+      false), (UVar ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UBinop
+      ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CLt))), (UVar
+      ('d'::('e'::('s'::('t'::[]))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))))), (USugar
+      (UCallModule ((Obj.magic id), (Obj.magic lift_self),
+      (Obj.magic r0_send), ((UVar
+      ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))) :: [])))), (UBind
+      (('m'::('0'::[])), (USugar (UCallModule ((Obj.magic id),
+      (Obj.magic lift_self), (Obj.magic r0_receive), []))), (UBind
+      (('m'::('1'::[])), (USugar (UCallModule ((Obj.magic id),
+      (Obj.magic lift_self), (Obj.magic r1_receive), []))), (UBind
+      (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+      (PrimUntyped.UUnpack (Struct_t NOC_type.basic_flit))), (UVar
       ('m'::('0'::[]))))), (UBind
       (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))), (UUnop
       ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
@@ -2028,117 +2076,115 @@ module Router =
       ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))), (USugar
       (UConstBits ((Stdlib.Int.succ 0),
       (vect_cons 0 false (Obj.magic __))))))))) :: [])))), (UBind
-      (('t'::('r'::('g'::('_'::('x'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('t'::('r'::('g'::('_'::('x'::[]))))))), (UVar
-      ('m'::('s'::('g'::[])))))), (UBind
-      (('t'::('r'::('g'::('_'::('y'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('t'::('r'::('g'::('_'::('y'::[]))))))), (UVar
-      ('m'::('s'::('g'::[])))))), (UBind
-      (('s'::('r'::('c'::('_'::('x'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('x'::[]))), (UUnop ((PrimUntyped.UConv
-      (PrimUntyped.UUnpack (Struct_t Types.router_address))), (UVar
-      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UBind
-      (('s'::('r'::('c'::('_'::('y'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('y'::[]))), (UUnop ((PrimUntyped.UConv
-      (PrimUntyped.UUnpack (Struct_t Types.router_address))), (UVar
-      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UIf ((UBinop
-      ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
-      ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-      ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
+      (('d'::('e'::('s'::('t'::[])))), (UUnop ((PrimUntyped.UStruct1
+      (PrimUntyped.UGetField ('d'::('e'::('s'::('t'::[])))))), (UVar
+      ('m'::('s'::('g'::[])))))), (USeq ((UIf ((UBinop ((PrimUntyped.UBits2
+      (PrimUntyped.UCompare (false, CGt))), (UVar
+      ('d'::('e'::('s'::('t'::[]))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar (UCallModule
       ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r1_send), ((UUnop
       ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
       (PrimUntyped.USubstField ('s'::('r'::('c'::[]))))), (UVar
       ('m'::('s'::('g'::[])))), (UVar
       ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))), (UIf
       ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CLt))),
-      (UVar ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-      ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
+      (UVar ('d'::('e'::('s'::('t'::[]))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar (UCallModule
       ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_send), ((UUnop
       ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
       (PrimUntyped.USubstField ('s'::('r'::('c'::[]))))), (UVar
       ('m'::('s'::('g'::[])))), (UVar
       ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))), (USugar
       (UCallModule ((Obj.magic id), (Obj.magic lift_self),
-      (Obj.magic r0_send), ((UExternalCall (tile_Out, (UVar
-      ('m'::('1'::[]))))) :: [])))))))))))))))))), (USugar (UConstBits (0,
-      (Obj.magic __)))))), (UBind (('m'::('s'::('g'::('1'::[])))), (UUnop
-      ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t Types.basic_flit))),
-      (UVar ('m'::('1'::[]))))), (UBind
+      (Obj.magic rtile_send), ((UExternalCall (tile_Out, (UVar
+      ('m'::('0'::[]))))) :: [])))))))), (USugar (UCallModule
+      ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_send), ((UUnop
+      ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
+      (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
+      ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ 0),
+      (Bits.of_N (Stdlib.Int.succ 0) 0)))))))) :: [])))))))))), (USugar
+      (UConstBits (0, (Obj.magic __)))))), (UBind (('m'::('s'::('g'::[]))),
+      (UUnop ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
+      NOC_type.basic_flit))), (UVar ('m'::('1'::[]))))), (UBind
       (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))), (UUnop
       ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-      ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::('1'::[]))))))),
-      (UBind (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop
-      ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-      ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::('1'::[]))))))),
-      (UIf ((UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UBinop
-      ((PrimUntyped.UEq true), (UVar ('s'::('r'::('c'::('_'::('p'::[])))))),
-      (UVar ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UVar
+      ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UBind
+      (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop ((PrimUntyped.UStruct1
+      (PrimUntyped.UGetField ('s'::('r'::('c'::[]))))), (UVar
+      ('m'::('s'::('g'::[])))))), (UIf ((UBinop ((PrimUntyped.UBits2
+      PrimUntyped.UAnd), (UBinop ((PrimUntyped.UEq true), (UVar
+      ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UVar
       ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))))), (USeq
       ((USugar (UCallModule ((Obj.magic id), (Obj.magic lift_self),
       (Obj.magic r1_send), ((UUnop ((PrimUntyped.UConv PrimUntyped.UPack),
       (UBinop ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
-      ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::('1'::[]))))),
-      (USugar (UConstBits ((Stdlib.Int.succ 0),
+      ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))), (USugar
+      (UConstBits ((Stdlib.Int.succ 0),
       (vect_cons 0 false (Obj.magic __))))))))) :: [])))), (UBind
-      (('t'::('r'::('g'::('_'::('x'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('t'::('r'::('g'::('_'::('x'::[]))))))), (UVar
-      ('m'::('s'::('g'::('1'::[]))))))), (UBind
-      (('t'::('r'::('g'::('_'::('y'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('t'::('r'::('g'::('_'::('y'::[]))))))), (UVar
-      ('m'::('s'::('g'::('1'::[]))))))), (UBind
-      (('s'::('r'::('c'::('_'::('x'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('x'::[]))), (UUnop ((PrimUntyped.UConv
-      (PrimUntyped.UUnpack (Struct_t Types.router_address))), (UVar
-      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UBind
-      (('s'::('r'::('c'::('_'::('y'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('y'::[]))), (UUnop ((PrimUntyped.UConv
-      (PrimUntyped.UUnpack (Struct_t Types.router_address))), (UVar
-      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UIf ((UBinop
-      ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
-      ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-      ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
+      (('d'::('e'::('s'::('t'::[])))), (UUnop ((PrimUntyped.UStruct1
+      (PrimUntyped.UGetField ('d'::('e'::('s'::('t'::[])))))), (UVar
+      ('m'::('s'::('g'::[])))))), (USeq ((UIf ((UBinop ((PrimUntyped.UBits2
+      (PrimUntyped.UCompare (false, CGt))), (UVar
+      ('d'::('e'::('s'::('t'::[]))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar (UCallModule
       ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r1_send), ((UUnop
       ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
       (PrimUntyped.USubstField ('s'::('r'::('c'::[]))))), (UVar
-      ('m'::('s'::('g'::('1'::[]))))), (UVar
+      ('m'::('s'::('g'::[])))), (UVar
       ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))), (UIf
       ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CLt))),
-      (UVar ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-      ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
+      (UVar ('d'::('e'::('s'::('t'::[]))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar (UCallModule
       ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_send), ((UUnop
       ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
       (PrimUntyped.USubstField ('s'::('r'::('c'::[]))))), (UVar
-      ('m'::('s'::('g'::('1'::[]))))), (UVar
+      ('m'::('s'::('g'::[])))), (UVar
       ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))), (USugar
-      (UConstBits (0, (Obj.magic __)))))))))))))))))), (USugar (UConstBits
-      (0, (Obj.magic __)))))))))))))))))))))))))
+      (UCallModule ((Obj.magic id), (Obj.magic lift_self),
+      (Obj.magic rtile_send), ((UExternalCall (tile_Out, (UVar
+      ('m'::('1'::[]))))) :: [])))))))), (USugar (UCallModule
+      ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r1_send), ((UUnop
+      ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
+      (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
+      ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ 0),
+      (Bits.of_N (Stdlib.Int.succ 0) 0)))))))) :: [])))))))))), (USugar
+      (UConstBits (0, (Obj.magic __)))))))))))))))))))))))))))))))))))))))
 
   (** val _routeend_r :
       int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
       Regs.ext_fn_t) uaction) internalFunction -> (var_t, fn_name_t, (pos_t,
       var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction) internalFunction
-      -> Regs.ext_fn_t -> Regs.ext_fn_t -> (pos_t, var_t, fn_name_t,
-      Regs.reg_t, Regs.ext_fn_t) uaction **)
+      -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
+      Regs.ext_fn_t) uaction) internalFunction -> Regs.ext_fn_t ->
+      Regs.ext_fn_t -> (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t)
+      uaction **)
 
-  let _routeend_r r_addr2 r0_send r0_receive tile_In tile_Out =
+  let _routeend_r r_addr2 r0_send r0_receive rtile_send tile_In tile_Out =
     UBind (('r'::('_'::('a'::('d'::('d'::('r'::[])))))), (USugar (UConstBits
-      ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      0)))),
-      (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ 0)))) r_addr2)))), (UBind (('m'::('0'::[])), (UBinop
-      ((PrimUntyped.UBits2 PrimUntyped.UXor), (USugar (UCallModule
-      ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_receive), []))),
-      (UExternalCall (tile_In, (USugar (UConstBits ((Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-      (Stdlib.Int.succ 0)))))))))))))),
-      (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-        (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
-      (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
-      (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
+      (NOC_type.addr_sz, (Bits.of_nat NOC_type.addr_sz r_addr2)))), (UBind
+      (('m'::('_'::('i'::('n'::('p'::('u'::('t'::[]))))))), (UExternalCall
+      (tile_In, (USugar (UConstBits (NOC_type.sz, bz))))), (UBind
+      (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+      (PrimUntyped.UUnpack (Struct_t NOC_type.basic_flit))), (UVar
+      ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))))), (UBind
+      (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))), (UUnop
+      ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+      ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UBind
+      (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop ((PrimUntyped.UStruct1
+      (PrimUntyped.UGetField ('s'::('r'::('c'::[]))))), (UVar
+      ('m'::('s'::('g'::[])))))), (UIf ((UBinop ((PrimUntyped.UBits2
+      PrimUntyped.UAnd), (UVar
+      ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))), (UBinop
+      ((PrimUntyped.UEq false), (UVar ('s'::('r'::('c'::('_'::('p'::[])))))),
+      (UVar ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (USugar
+      (UCallModule ((Obj.magic id), (Obj.magic lift_self),
+      (Obj.magic r0_send), ((UVar
+      ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))) :: [])))), (UBind
+      (('m'::('0'::[])), (USugar (UCallModule ((Obj.magic id),
+      (Obj.magic lift_self), (Obj.magic r0_receive), []))), (UBind
+      (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+      (PrimUntyped.UUnpack (Struct_t NOC_type.basic_flit))), (UVar
       ('m'::('0'::[]))))), (UBind
       (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))), (UUnop
       ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
@@ -2150,66 +2196,80 @@ module Router =
       ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
       ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UVar
       ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))))), (UBind
-      (('t'::('r'::('g'::('_'::('x'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('t'::('r'::('g'::('_'::('x'::[]))))))), (UVar
-      ('m'::('s'::('g'::[])))))), (UBind
-      (('t'::('r'::('g'::('_'::('y'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('t'::('r'::('g'::('_'::('y'::[]))))))), (UVar
-      ('m'::('s'::('g'::[])))))), (UBind
-      (('s'::('r'::('c'::('_'::('x'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('x'::[]))), (UUnop ((PrimUntyped.UConv
-      (PrimUntyped.UUnpack (Struct_t Types.router_address))), (UVar
-      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UBind
-      (('s'::('r'::('c'::('_'::('y'::[]))))), (UUnop ((PrimUntyped.UStruct1
-      (PrimUntyped.UGetField ('y'::[]))), (UUnop ((PrimUntyped.UConv
-      (PrimUntyped.UUnpack (Struct_t Types.router_address))), (UVar
-      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UIf ((UBinop
-      ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
-      ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-      ('s'::('r'::('c'::('_'::('x'::[])))))))), (UFail (Bits_t 0)), (UIf
-      ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CLt))),
-      (UVar ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-      ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
+      (('d'::('e'::('s'::('t'::[])))), (UUnop ((PrimUntyped.UStruct1
+      (PrimUntyped.UGetField ('d'::('e'::('s'::('t'::[])))))), (UVar
+      ('m'::('s'::('g'::[])))))), (USeq ((UIf ((UBinop ((PrimUntyped.UBits2
+      (PrimUntyped.UCompare (false, CGt))), (UVar
+      ('d'::('e'::('s'::('t'::[]))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UFail (Bits_t 0)),
+      (UIf ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false,
+      CLt))), (UVar ('d'::('e'::('s'::('t'::[]))))), (UVar
+      ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar (UCallModule
       ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_send), ((UUnop
       ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
       (PrimUntyped.USubstField ('s'::('r'::('c'::[]))))), (UVar
       ('m'::('s'::('g'::[])))), (UVar
       ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))), (USugar
       (UCallModule ((Obj.magic id), (Obj.magic lift_self),
-      (Obj.magic r0_send), ((UExternalCall (tile_Out, (UVar
-      ('m'::('0'::[]))))) :: [])))))))))))))))), (USugar (UConstBits (0,
-      (Obj.magic __)))))))))))))))
+      (Obj.magic rtile_send), ((UExternalCall (tile_Out, (UVar
+      ('m'::('0'::[]))))) :: [])))))))), (USugar (UCallModule
+      ((Obj.magic id), (Obj.magic lift_self), (Obj.magic r0_send), ((UUnop
+      ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
+      (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
+      ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ 0),
+      (Bits.of_N (Stdlib.Int.succ 0) 0)))))))) :: [])))))))), (USugar
+      (UConstBits (0, (Obj.magic __)))))))))))))))))))))))))
 
   (** val routecenterfn :
+      int -> Regs.reg_t -> Regs.reg_t -> Regs.reg_t -> Regs.ext_fn_t ->
+      Regs.ext_fn_t -> (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t)
+      uaction **)
+
+  let routecenterfn n0 r1 r2 r_ack e1 e2 =
+    _routecenter_r n0 (r_send r1) (r_send r2) (r_receive r1) (r_receive r2)
+      (r_send r_ack) e1 e2
+
+  (** val routestartfn :
       int -> Regs.reg_t -> Regs.reg_t -> Regs.ext_fn_t -> Regs.ext_fn_t ->
       (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction **)
 
-  let routecenterfn n0 r1 r2 e1 e2 =
-    _routecenter_r n0 (r_send r1) (r_send r2) (r_receive r1) (r_receive r2)
-      e1 e2
-
-  (** val routestartfn :
-      int -> Regs.reg_t -> Regs.ext_fn_t -> Regs.ext_fn_t -> (pos_t, var_t,
-      fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction **)
-
-  let routestartfn n0 r1 e1 e2 =
-    _routestart_r n0 (r_send r1) (r_receive r1) e1 e2
+  let routestartfn n0 r1 r_ack e1 e2 =
+    _routestart_r n0 (r_send r1) (r_receive r1) (r_send r_ack) e1 e2
 
   (** val routeendfn :
-      int -> Regs.reg_t -> Regs.ext_fn_t -> Regs.ext_fn_t -> (pos_t, var_t,
-      fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction **)
+      int -> Regs.reg_t -> Regs.reg_t -> Regs.ext_fn_t -> Regs.ext_fn_t ->
+      (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction **)
 
-  let routeendfn n0 r1 e1 e2 =
-    _routeend_r n0 (r_send r1) (r_receive r1) e1 e2
+  let routeendfn n0 r1 r_ack e1 e2 =
+    _routeend_r n0 (r_send r1) (r_receive r1) (r_send r_ack) e1 e2
+ end
+
+module MyTypes =
+ struct
+  (** val nocsize : int **)
+
+  let nocsize =
+    Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ 0)))
+
+  (** val data_sz : int **)
+
+  let data_sz =
+    Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ 0)))
  end
 
 module NOCImpl =
  struct
+  module NOC_type = Types(MyTypes)
+
   module Coq__1 = struct
    type reg_t =
    | Coq_r1
    | Coq_r2
    | Coq_r3
+   | Coq_r4
+   | Coq_r5
+   | Coq_r6
+   | Coq_r7
   end
   include Coq__1
 
@@ -2239,23 +2299,23 @@ module NOCImpl =
     type ext_fn_t = Coq__2.ext_fn_t
    end
 
+  module Routerfns = Router(MyRegs)(MyTypes)
+
   (** val coq_Sigma : ext_fn_t -> externalSignature **)
 
   let coq_Sigma _ =
-    { argSigs = (vect_cons 0 (Bits_t Types.sz) (Obj.magic __)); retSig =
-      (Bits_t Types.sz) }
-
-  module Routerfns = Router(MyRegs)
+    { argSigs = (vect_cons 0 (Bits_t NOC_type.sz) (Obj.magic __)); retSig =
+      (Bits_t NOC_type.sz) }
 
   (** val coq_R : reg_t -> type0 **)
 
   let coq_R _ =
-    Bits_t (struct_sz Types.basic_flit)
+    Bits_t (struct_sz NOC_type.basic_flit)
 
   (** val r : reg_t -> type_denote **)
 
   let r _ =
-    Bits.zero (struct_sz Types.basic_flit)
+    Bits.zero (struct_sz NOC_type.basic_flit)
 
   (** val schedule : (pos_t, rule_name_t) scheduler **)
 
@@ -2277,26 +2337,34 @@ module NOCImpl =
       (let desugared =
          desugar_action dummyPos_unit.dummy_pos (UBind
            (('r'::('_'::('a'::('d'::('d'::('r'::[])))))), (USugar (UConstBits
-           ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ 0)))),
-           (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ 0)))) 0)))), (UBind (('m'::('0'::[])), (UBinop
-           ((PrimUntyped.UBits2 PrimUntyped.UXor), (USugar (UCallModule (id,
-           (Obj.magic lift_self), (Obj.magic Routerfns.r_receive Coq_r1),
-           []))), (UExternalCall (Coq_extfn_1, (USugar (UConstBits
-           ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))),
-           (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
-           (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
-           (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
-           ('m'::('0'::[]))))), (UBind
+           (Routerfns.NOC_type.addr_sz,
+           (Bits.of_nat Routerfns.NOC_type.addr_sz 0)))), (UBind
+           (('m'::('_'::('i'::('n'::('p'::('u'::('t'::[]))))))),
+           (UExternalCall ((Obj.magic Coq_extfn_1), (USugar (UConstBits
+           (Routerfns.NOC_type.sz, Routerfns.bz))))), (UBind
+           (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+           (PrimUntyped.UUnpack (Struct_t Routerfns.NOC_type.basic_flit))),
+           (UVar ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))))),
+           (UBind
+           (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
+           (UUnop ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))),
+           (UBind (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop
+           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UIf
+           ((UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UVar
+           ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))),
+           (UBinop ((PrimUntyped.UEq false), (UVar
+           ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r1),
+           ((UVar
+           ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))) :: [])))),
+           (UBind (('m'::('0'::[])), (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_receive Coq_r1), []))), (UBind
+           (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+           (PrimUntyped.UUnpack (Struct_t Routerfns.NOC_type.basic_flit))),
+           (UVar ('m'::('0'::[]))))), (UBind
            (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
            (UUnop ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
            ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))),
@@ -2308,39 +2376,31 @@ module NOCImpl =
            ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
            ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UVar
            ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))))),
-           (UBind (('t'::('r'::('g'::('_'::('x'::[]))))), (UUnop
+           (UBind (('d'::('e'::('s'::('t'::[])))), (UUnop
            ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('t'::('r'::('g'::('_'::('x'::[]))))))), (UVar
-           ('m'::('s'::('g'::[])))))), (UBind
-           (('t'::('r'::('g'::('_'::('y'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('t'::('r'::('g'::('_'::('y'::[]))))))), (UVar
-           ('m'::('s'::('g'::[])))))), (UBind
-           (('s'::('r'::('c'::('_'::('x'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField ('x'::[]))), (UUnop
-           ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.router_address))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UBind
-           (('s'::('r'::('c'::('_'::('y'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField ('y'::[]))), (UUnop
-           ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.router_address))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UIf ((UBinop
+           ('d'::('e'::('s'::('t'::[])))))), (UVar
+           ('m'::('s'::('g'::[])))))), (USeq ((UIf ((UBinop
            ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
-           ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-           ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
-           (id, (Obj.magic lift_self), (Obj.magic Routerfns.r_send Coq_r1),
+           ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r1),
            ((UUnop ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
            ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
            ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))), (UVar
            ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))), (UIf
            ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false,
-           CLt))), (UVar ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-           ('s'::('r'::('c'::('_'::('x'::[])))))))), (UFail (Bits_t 0)),
-           (USugar (UCallModule (id, (Obj.magic lift_self),
-           (Obj.magic Routerfns.r_send Coq_r1), ((UExternalCall (Coq_extfn_2,
-           (UVar ('m'::('0'::[]))))) :: [])))))))))))))))), (USugar
-           (UConstBits (0, (Obj.magic __))))))))))))))))
+           CLt))), (UVar ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UFail (Bits_t
+           0)), (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_send Coq_r4), ((UExternalCall
+           ((Obj.magic Coq_extfn_2), (UVar ('m'::('0'::[]))))) :: [])))))))),
+           (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_send Coq_r1), ((UUnop ((PrimUntyped.UConv
+           PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
+           (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
+           ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ
+           0), (Bits.of_N (Stdlib.Int.succ 0) 0)))))))) :: [])))))))),
+           (USugar (UConstBits (0, (Obj.magic __))))))))))))))))))))))))))
        in
        tc_action eqDec_string coq_R coq_Sigma dummyPos_unit.dummy_pos []
          (Bits_t 0) (Obj.magic desugared))
@@ -2349,41 +2409,56 @@ module NOCImpl =
       (let desugared =
          desugar_action dummyPos_unit.dummy_pos (UBind
            (('r'::('_'::('a'::('d'::('d'::('r'::[])))))), (USugar (UConstBits
-           ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ 0)))),
-           (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ 0)))) (Stdlib.Int.succ 0))))), (UBind
-           (('m'::('0'::[])), (UBinop ((PrimUntyped.UBits2 PrimUntyped.UXor),
-           (USugar (UCallModule (id, lift_self,
-           (Obj.magic Routerfns.r_receive Coq_r1), []))), (UExternalCall
-           ((Obj.magic Coq_extfn_3), (USugar (UConstBits ((Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ 0)))))))))))))),
-           (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
-           (UBind (('m'::('1'::[])), (UBinop ((PrimUntyped.UBits2
-           PrimUntyped.UXor), (USugar (UCallModule (id, lift_self,
-           (Obj.magic Routerfns.r_receive Coq_r2), []))), (UExternalCall
-           ((Obj.magic Coq_extfn_3), (USugar (UConstBits ((Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ 0)))))))))))))),
-           (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
-           (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
-           (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
-           ('m'::('0'::[]))))), (UBind
+           (Routerfns.NOC_type.addr_sz,
+           (Bits.of_nat Routerfns.NOC_type.addr_sz (Stdlib.Int.succ 0))))),
+           (UBind (('m'::('_'::('i'::('n'::('p'::('u'::('t'::[]))))))),
+           (UExternalCall ((Obj.magic Coq_extfn_3), (USugar (UConstBits
+           (Routerfns.NOC_type.sz, Routerfns.bz))))), (UBind
+           (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+           (PrimUntyped.UUnpack (Struct_t Routerfns.NOC_type.basic_flit))),
+           (UVar ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))))),
+           (UBind
+           (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
+           (UUnop ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))),
+           (UBind (('d'::('e'::('s'::('t'::[])))), (UUnop
+           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('d'::('e'::('s'::('t'::[])))))), (UVar
+           ('m'::('s'::('g'::[])))))), (UBind
+           (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop
+           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UIf
+           ((UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UVar
+           ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))),
+           (UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UBinop
+           ((PrimUntyped.UEq false), (UVar
+           ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UBinop
+           ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
+           ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r2),
+           ((UVar
+           ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))) :: [])))),
+           (UIf ((UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UVar
+           ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))),
+           (UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UBinop
+           ((PrimUntyped.UEq false), (UVar
+           ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UBinop
+           ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CLt))), (UVar
+           ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r1),
+           ((UVar
+           ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))) :: [])))),
+           (UBind (('m'::('0'::[])), (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_receive Coq_r1), []))), (UBind
+           (('m'::('1'::[])), (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_receive Coq_r2), []))), (UBind
+           (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+           (PrimUntyped.UUnpack (Struct_t Routerfns.NOC_type.basic_flit))),
+           (UVar ('m'::('0'::[]))))), (UBind
            (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
            (UUnop ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
            ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))),
@@ -2401,102 +2476,85 @@ module NOCImpl =
            (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
            ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ
            0), (vect_cons 0 false (Obj.magic __))))))))) :: [])))), (UBind
-           (('t'::('r'::('g'::('_'::('x'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('t'::('r'::('g'::('_'::('x'::[]))))))), (UVar
-           ('m'::('s'::('g'::[])))))), (UBind
-           (('t'::('r'::('g'::('_'::('y'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('t'::('r'::('g'::('_'::('y'::[]))))))), (UVar
-           ('m'::('s'::('g'::[])))))), (UBind
-           (('s'::('r'::('c'::('_'::('x'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField ('x'::[]))), (UUnop
-           ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.router_address))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UBind
-           (('s'::('r'::('c'::('_'::('y'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField ('y'::[]))), (UUnop
-           ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.router_address))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UIf ((UBinop
+           (('d'::('e'::('s'::('t'::[])))), (UUnop ((PrimUntyped.UStruct1
+           (PrimUntyped.UGetField ('d'::('e'::('s'::('t'::[])))))), (UVar
+           ('m'::('s'::('g'::[])))))), (USeq ((UIf ((UBinop
            ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
-           ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-           ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
-           (id, lift_self, (Obj.magic Routerfns.r_send Coq_r2), ((UUnop
-           ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
+           ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r2),
+           ((UUnop ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
            ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
            ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))), (UVar
            ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))), (UIf
            ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false,
-           CLt))), (UVar ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-           ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
-           (id, lift_self, (Obj.magic Routerfns.r_send Coq_r1), ((UUnop
-           ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
+           CLt))), (UVar ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r1),
+           ((UUnop ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
            ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
            ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))), (UVar
            ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))),
            (USugar (UCallModule (id, lift_self,
-           (Obj.magic Routerfns.r_send Coq_r1), ((UExternalCall
-           ((Obj.magic Coq_extfn_4), (UVar
-           ('m'::('1'::[]))))) :: [])))))))))))))))))), (USugar (UConstBits
-           (0, (Obj.magic __)))))), (UBind (('m'::('s'::('g'::('1'::[])))),
-           (UUnop ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.basic_flit))), (UVar ('m'::('1'::[]))))), (UBind
+           (Obj.magic Routerfns.r_send Coq_r5), ((UExternalCall
+           ((Obj.magic Coq_extfn_4), (UVar ('m'::('0'::[]))))) :: [])))))))),
+           (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_send Coq_r1), ((UUnop ((PrimUntyped.UConv
+           PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
+           (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
+           ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ
+           0), (Bits.of_N (Stdlib.Int.succ 0) 0)))))))) :: [])))))))))),
+           (USugar (UConstBits (0, (Obj.magic __)))))), (UBind
+           (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+           (PrimUntyped.UUnpack (Struct_t Routerfns.NOC_type.basic_flit))),
+           (UVar ('m'::('1'::[]))))), (UBind
            (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
            (UUnop ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('n'::('e'::('w'::[]))))), (UVar
-           ('m'::('s'::('g'::('1'::[]))))))), (UBind
-           (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop
+           ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))),
+           (UBind (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop
            ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('s'::('r'::('c'::[]))))), (UVar
-           ('m'::('s'::('g'::('1'::[]))))))), (UIf ((UBinop
-           ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UBinop ((PrimUntyped.UEq
-           true), (UVar ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
+           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UIf
+           ((UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UBinop
+           ((PrimUntyped.UEq true), (UVar
+           ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
            ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UVar
            ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))))),
            (USeq ((USugar (UCallModule (id, lift_self,
            (Obj.magic Routerfns.r_send Coq_r2), ((UUnop ((PrimUntyped.UConv
            PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
            (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
-           ('m'::('s'::('g'::('1'::[]))))), (USugar (UConstBits
-           ((Stdlib.Int.succ 0),
-           (vect_cons 0 false (Obj.magic __))))))))) :: [])))), (UBind
-           (('t'::('r'::('g'::('_'::('x'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('t'::('r'::('g'::('_'::('x'::[]))))))), (UVar
-           ('m'::('s'::('g'::('1'::[]))))))), (UBind
-           (('t'::('r'::('g'::('_'::('y'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('t'::('r'::('g'::('_'::('y'::[]))))))), (UVar
-           ('m'::('s'::('g'::('1'::[]))))))), (UBind
-           (('s'::('r'::('c'::('_'::('x'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField ('x'::[]))), (UUnop
-           ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.router_address))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UBind
-           (('s'::('r'::('c'::('_'::('y'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField ('y'::[]))), (UUnop
-           ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.router_address))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UIf ((UBinop
+           ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ
+           0), (vect_cons 0 false (Obj.magic __))))))))) :: [])))), (UBind
+           (('d'::('e'::('s'::('t'::[])))), (UUnop ((PrimUntyped.UStruct1
+           (PrimUntyped.UGetField ('d'::('e'::('s'::('t'::[])))))), (UVar
+           ('m'::('s'::('g'::[])))))), (USeq ((UIf ((UBinop
            ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
-           ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-           ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
-           (id, lift_self, (Obj.magic Routerfns.r_send Coq_r2), ((UUnop
-           ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
+           ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r2),
+           ((UUnop ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
            ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
-           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::('1'::[]))))),
-           (UVar ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))),
-           (UIf ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false,
-           CLt))), (UVar ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-           ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
-           (id, lift_self, (Obj.magic Routerfns.r_send Coq_r1), ((UUnop
-           ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
+           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))), (UIf
+           ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false,
+           CLt))), (UVar ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r1),
+           ((UUnop ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
            ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
-           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::('1'::[]))))),
-           (UVar ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))),
-           (USugar (UConstBits (0, (Obj.magic __)))))))))))))))))), (USugar
-           (UConstBits (0, (Obj.magic __))))))))))))))))))))))))))
+           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))),
+           (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_send Coq_r5), ((UExternalCall
+           ((Obj.magic Coq_extfn_4), (UVar ('m'::('1'::[]))))) :: [])))))))),
+           (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_send Coq_r2), ((UUnop ((PrimUntyped.UConv
+           PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
+           (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
+           ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ
+           0), (Bits.of_N (Stdlib.Int.succ 0) 0)))))))) :: [])))))))))),
+           (USugar (UConstBits (0,
+           (Obj.magic __))))))))))))))))))))))))))))))))))))))))
        in
        tc_action eqDec_string coq_R coq_Sigma dummyPos_unit.dummy_pos []
          (Bits_t 0) (Obj.magic desugared))
@@ -2505,41 +2563,57 @@ module NOCImpl =
       (let desugared =
          desugar_action dummyPos_unit.dummy_pos (UBind
            (('r'::('_'::('a'::('d'::('d'::('r'::[])))))), (USugar (UConstBits
-           ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ 0)))),
-           (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ 0)))) (Stdlib.Int.succ (Stdlib.Int.succ 0)))))),
-           (UBind (('m'::('0'::[])), (UBinop ((PrimUntyped.UBits2
-           PrimUntyped.UXor), (USugar (UCallModule (id, lift_self,
-           (Obj.magic Routerfns.r_receive Coq_r2), []))), (UExternalCall
-           ((Obj.magic Coq_extfn_5), (USugar (UConstBits ((Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ 0)))))))))))))),
-           (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
-           (UBind (('m'::('1'::[])), (UBinop ((PrimUntyped.UBits2
-           PrimUntyped.UXor), (USugar (UCallModule (id, lift_self,
-           (Obj.magic Routerfns.r_receive Coq_r3), []))), (UExternalCall
-           ((Obj.magic Coq_extfn_5), (USugar (UConstBits ((Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ 0)))))))))))))),
-           (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
-           (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
-           (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
-           ('m'::('0'::[]))))), (UBind
+           (Routerfns.NOC_type.addr_sz,
+           (Bits.of_nat Routerfns.NOC_type.addr_sz (Stdlib.Int.succ
+             (Stdlib.Int.succ 0)))))), (UBind
+           (('m'::('_'::('i'::('n'::('p'::('u'::('t'::[]))))))),
+           (UExternalCall ((Obj.magic Coq_extfn_5), (USugar (UConstBits
+           (Routerfns.NOC_type.sz, Routerfns.bz))))), (UBind
+           (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+           (PrimUntyped.UUnpack (Struct_t Routerfns.NOC_type.basic_flit))),
+           (UVar ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))))),
+           (UBind
+           (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
+           (UUnop ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))),
+           (UBind (('d'::('e'::('s'::('t'::[])))), (UUnop
+           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('d'::('e'::('s'::('t'::[])))))), (UVar
+           ('m'::('s'::('g'::[])))))), (UBind
+           (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop
+           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UIf
+           ((UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UVar
+           ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))),
+           (UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UBinop
+           ((PrimUntyped.UEq false), (UVar
+           ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UBinop
+           ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
+           ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r3),
+           ((UVar
+           ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))) :: [])))),
+           (UIf ((UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UVar
+           ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))),
+           (UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UBinop
+           ((PrimUntyped.UEq false), (UVar
+           ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UBinop
+           ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CLt))), (UVar
+           ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r2),
+           ((UVar
+           ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))) :: [])))),
+           (UBind (('m'::('0'::[])), (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_receive Coq_r2), []))), (UBind
+           (('m'::('1'::[])), (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_receive Coq_r3), []))), (UBind
+           (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+           (PrimUntyped.UUnpack (Struct_t Routerfns.NOC_type.basic_flit))),
+           (UVar ('m'::('0'::[]))))), (UBind
            (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
            (UUnop ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
            ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))),
@@ -2557,131 +2631,38 @@ module NOCImpl =
            (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
            ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ
            0), (vect_cons 0 false (Obj.magic __))))))))) :: [])))), (UBind
-           (('t'::('r'::('g'::('_'::('x'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('t'::('r'::('g'::('_'::('x'::[]))))))), (UVar
-           ('m'::('s'::('g'::[])))))), (UBind
-           (('t'::('r'::('g'::('_'::('y'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('t'::('r'::('g'::('_'::('y'::[]))))))), (UVar
-           ('m'::('s'::('g'::[])))))), (UBind
-           (('s'::('r'::('c'::('_'::('x'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField ('x'::[]))), (UUnop
-           ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.router_address))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UBind
-           (('s'::('r'::('c'::('_'::('y'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField ('y'::[]))), (UUnop
-           ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.router_address))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UIf ((UBinop
+           (('d'::('e'::('s'::('t'::[])))), (UUnop ((PrimUntyped.UStruct1
+           (PrimUntyped.UGetField ('d'::('e'::('s'::('t'::[])))))), (UVar
+           ('m'::('s'::('g'::[])))))), (USeq ((UIf ((UBinop
            ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
-           ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-           ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
-           (id, lift_self, (Obj.magic Routerfns.r_send Coq_r3), ((UUnop
-           ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
+           ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r3),
+           ((UUnop ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
            ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
            ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))), (UVar
            ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))), (UIf
            ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false,
-           CLt))), (UVar ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-           ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
-           (id, lift_self, (Obj.magic Routerfns.r_send Coq_r2), ((UUnop
-           ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
+           CLt))), (UVar ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r2),
+           ((UUnop ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
            ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
            ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))), (UVar
            ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))),
            (USugar (UCallModule (id, lift_self,
-           (Obj.magic Routerfns.r_send Coq_r2), ((UExternalCall
-           ((Obj.magic Coq_extfn_6), (UVar
-           ('m'::('1'::[]))))) :: [])))))))))))))))))), (USugar (UConstBits
-           (0, (Obj.magic __)))))), (UBind (('m'::('s'::('g'::('1'::[])))),
-           (UUnop ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.basic_flit))), (UVar ('m'::('1'::[]))))), (UBind
-           (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
-           (UUnop ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('n'::('e'::('w'::[]))))), (UVar
-           ('m'::('s'::('g'::('1'::[]))))))), (UBind
-           (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('s'::('r'::('c'::[]))))), (UVar
-           ('m'::('s'::('g'::('1'::[]))))))), (UIf ((UBinop
-           ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UBinop ((PrimUntyped.UEq
-           true), (UVar ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UVar
-           ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))))),
-           (USeq ((USugar (UCallModule (id, lift_self,
-           (Obj.magic Routerfns.r_send Coq_r3), ((UUnop ((PrimUntyped.UConv
+           (Obj.magic Routerfns.r_send Coq_r6), ((UExternalCall
+           ((Obj.magic Coq_extfn_6), (UVar ('m'::('0'::[]))))) :: [])))))))),
+           (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_send Coq_r2), ((UUnop ((PrimUntyped.UConv
            PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
            (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
-           ('m'::('s'::('g'::('1'::[]))))), (USugar (UConstBits
-           ((Stdlib.Int.succ 0),
-           (vect_cons 0 false (Obj.magic __))))))))) :: [])))), (UBind
-           (('t'::('r'::('g'::('_'::('x'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('t'::('r'::('g'::('_'::('x'::[]))))))), (UVar
-           ('m'::('s'::('g'::('1'::[]))))))), (UBind
-           (('t'::('r'::('g'::('_'::('y'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('t'::('r'::('g'::('_'::('y'::[]))))))), (UVar
-           ('m'::('s'::('g'::('1'::[]))))))), (UBind
-           (('s'::('r'::('c'::('_'::('x'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField ('x'::[]))), (UUnop
-           ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.router_address))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UBind
-           (('s'::('r'::('c'::('_'::('y'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField ('y'::[]))), (UUnop
-           ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.router_address))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UIf ((UBinop
-           ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
-           ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-           ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
-           (id, lift_self, (Obj.magic Routerfns.r_send Coq_r3), ((UUnop
-           ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
-           ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
-           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::('1'::[]))))),
-           (UVar ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))),
-           (UIf ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false,
-           CLt))), (UVar ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-           ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
-           (id, lift_self, (Obj.magic Routerfns.r_send Coq_r2), ((UUnop
-           ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
-           ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
-           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::('1'::[]))))),
-           (UVar ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))),
-           (USugar (UConstBits (0, (Obj.magic __)))))))))))))))))), (USugar
-           (UConstBits (0, (Obj.magic __))))))))))))))))))))))))))
-       in
-       tc_action eqDec_string coq_R coq_Sigma dummyPos_unit.dummy_pos []
-         (Bits_t 0) (Obj.magic desugared))
-  | Coq_router_4 ->
-    extract_success
-      (let desugared =
-         desugar_action dummyPos_unit.dummy_pos (UBind
-           (('r'::('_'::('a'::('d'::('d'::('r'::[])))))), (USugar (UConstBits
-           ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ 0)))),
-           (Bits.of_nat (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ 0)))) (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ 0))))))), (UBind (('m'::('0'::[])), (UBinop
-           ((PrimUntyped.UBits2 PrimUntyped.UXor), (USugar (UCallModule (id,
-           (Obj.magic lift_self), (Obj.magic Routerfns.r_receive Coq_r3),
-           []))), (UExternalCall (Coq_extfn_7, (USugar (UConstBits
-           ((Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-           (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))),
-           (Bits.of_N (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
-             (Stdlib.Int.succ (Stdlib.Int.succ 0)))))))))))))) 0)))))))),
-           (UBind (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
-           (PrimUntyped.UUnpack (Struct_t Types.basic_flit))), (UVar
-           ('m'::('0'::[]))))), (UBind
+           ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ
+           0), (Bits.of_N (Stdlib.Int.succ 0) 0)))))))) :: [])))))))))),
+           (USugar (UConstBits (0, (Obj.magic __)))))), (UBind
+           (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+           (PrimUntyped.UUnpack (Struct_t Routerfns.NOC_type.basic_flit))),
+           (UVar ('m'::('1'::[]))))), (UBind
            (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
            (UUnop ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
            ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))),
@@ -2693,39 +2674,115 @@ module NOCImpl =
            ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
            ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UVar
            ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))))),
-           (UBind (('t'::('r'::('g'::('_'::('x'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('t'::('r'::('g'::('_'::('x'::[]))))))), (UVar
-           ('m'::('s'::('g'::[])))))), (UBind
-           (('t'::('r'::('g'::('_'::('y'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
-           ('t'::('r'::('g'::('_'::('y'::[]))))))), (UVar
-           ('m'::('s'::('g'::[])))))), (UBind
-           (('s'::('r'::('c'::('_'::('x'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField ('x'::[]))), (UUnop
-           ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.router_address))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UBind
-           (('s'::('r'::('c'::('_'::('y'::[]))))), (UUnop
-           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField ('y'::[]))), (UUnop
-           ((PrimUntyped.UConv (PrimUntyped.UUnpack (Struct_t
-           Types.router_address))), (UVar
-           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (UIf ((UBinop
+           (USeq ((USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_send Coq_r3), ((UUnop ((PrimUntyped.UConv
+           PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
+           (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
+           ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ
+           0), (vect_cons 0 false (Obj.magic __))))))))) :: [])))), (UBind
+           (('d'::('e'::('s'::('t'::[])))), (UUnop ((PrimUntyped.UStruct1
+           (PrimUntyped.UGetField ('d'::('e'::('s'::('t'::[])))))), (UVar
+           ('m'::('s'::('g'::[])))))), (USeq ((UIf ((UBinop
            ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
-           ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-           ('s'::('r'::('c'::('_'::('x'::[])))))))), (UFail (Bits_t 0)), (UIf
+           ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r3),
+           ((UUnop ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
+           ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
+           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))), (UIf
            ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false,
-           CLt))), (UVar ('t'::('r'::('g'::('_'::('x'::[])))))), (UVar
-           ('s'::('r'::('c'::('_'::('x'::[])))))))), (USugar (UCallModule
-           (id, (Obj.magic lift_self), (Obj.magic Routerfns.r_send Coq_r3),
+           CLt))), (UVar ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r2),
            ((UUnop ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
            ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
            ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))), (UVar
            ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))),
-           (USugar (UCallModule (id, (Obj.magic lift_self),
-           (Obj.magic Routerfns.r_send Coq_r3), ((UExternalCall (Coq_extfn_8,
-           (UVar ('m'::('0'::[]))))) :: [])))))))))))))))), (USugar
-           (UConstBits (0, (Obj.magic __))))))))))))))))
+           (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_send Coq_r6), ((UExternalCall
+           ((Obj.magic Coq_extfn_6), (UVar ('m'::('1'::[]))))) :: [])))))))),
+           (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_send Coq_r3), ((UUnop ((PrimUntyped.UConv
+           PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
+           (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
+           ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ
+           0), (Bits.of_N (Stdlib.Int.succ 0) 0)))))))) :: [])))))))))),
+           (USugar (UConstBits (0,
+           (Obj.magic __))))))))))))))))))))))))))))))))))))))))
+       in
+       tc_action eqDec_string coq_R coq_Sigma dummyPos_unit.dummy_pos []
+         (Bits_t 0) (Obj.magic desugared))
+  | Coq_router_4 ->
+    extract_success
+      (let desugared =
+         desugar_action dummyPos_unit.dummy_pos (UBind
+           (('r'::('_'::('a'::('d'::('d'::('r'::[])))))), (USugar (UConstBits
+           (Routerfns.NOC_type.addr_sz,
+           (Bits.of_nat Routerfns.NOC_type.addr_sz (Stdlib.Int.succ
+             (Stdlib.Int.succ (Stdlib.Int.succ 0))))))), (UBind
+           (('m'::('_'::('i'::('n'::('p'::('u'::('t'::[]))))))),
+           (UExternalCall ((Obj.magic Coq_extfn_7), (USugar (UConstBits
+           (Routerfns.NOC_type.sz, Routerfns.bz))))), (UBind
+           (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+           (PrimUntyped.UUnpack (Struct_t Routerfns.NOC_type.basic_flit))),
+           (UVar ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))))),
+           (UBind
+           (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
+           (UUnop ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))),
+           (UBind (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop
+           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UIf
+           ((UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UVar
+           ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))),
+           (UBinop ((PrimUntyped.UEq false), (UVar
+           ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r3),
+           ((UVar
+           ('m'::('_'::('i'::('n'::('p'::('u'::('t'::[])))))))) :: [])))),
+           (UBind (('m'::('0'::[])), (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_receive Coq_r3), []))), (UBind
+           (('m'::('s'::('g'::[]))), (UUnop ((PrimUntyped.UConv
+           (PrimUntyped.UUnpack (Struct_t Routerfns.NOC_type.basic_flit))),
+           (UVar ('m'::('0'::[]))))), (UBind
+           (('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[])))))))),
+           (UUnop ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('n'::('e'::('w'::[]))))), (UVar ('m'::('s'::('g'::[])))))),
+           (UBind (('s'::('r'::('c'::('_'::('p'::[]))))), (UUnop
+           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))))), (UIf
+           ((UBinop ((PrimUntyped.UBits2 PrimUntyped.UAnd), (UBinop
+           ((PrimUntyped.UEq true), (UVar
+           ('s'::('r'::('c'::('_'::('p'::[])))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UVar
+           ('n'::('e'::('w'::('_'::('d'::('a'::('t'::('a'::[]))))))))))),
+           (UBind (('d'::('e'::('s'::('t'::[])))), (UUnop
+           ((PrimUntyped.UStruct1 (PrimUntyped.UGetField
+           ('d'::('e'::('s'::('t'::[])))))), (UVar
+           ('m'::('s'::('g'::[])))))), (USeq ((UIf ((UBinop
+           ((PrimUntyped.UBits2 (PrimUntyped.UCompare (false, CGt))), (UVar
+           ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (UFail (Bits_t
+           0)), (UIf ((UBinop ((PrimUntyped.UBits2 (PrimUntyped.UCompare
+           (false, CLt))), (UVar ('d'::('e'::('s'::('t'::[]))))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))), (USugar
+           (UCallModule (id, lift_self, (Obj.magic Routerfns.r_send Coq_r3),
+           ((UUnop ((PrimUntyped.UConv PrimUntyped.UPack), (UBinop
+           ((PrimUntyped.UStruct2 (PrimUntyped.USubstField
+           ('s'::('r'::('c'::[]))))), (UVar ('m'::('s'::('g'::[])))), (UVar
+           ('r'::('_'::('a'::('d'::('d'::('r'::[]))))))))))) :: [])))),
+           (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_send Coq_r7), ((UExternalCall
+           ((Obj.magic Coq_extfn_8), (UVar ('m'::('0'::[]))))) :: [])))))))),
+           (USugar (UCallModule (id, lift_self,
+           (Obj.magic Routerfns.r_send Coq_r3), ((UUnop ((PrimUntyped.UConv
+           PrimUntyped.UPack), (UBinop ((PrimUntyped.UStruct2
+           (PrimUntyped.USubstField ('n'::('e'::('w'::[]))))), (UVar
+           ('m'::('s'::('g'::[])))), (USugar (UConstBits ((Stdlib.Int.succ
+           0), (Bits.of_N (Stdlib.Int.succ 0) 0)))))))) :: [])))))))),
+           (USugar (UConstBits (0, (Obj.magic __))))))))))))))))))))))))))
        in
        tc_action eqDec_string coq_R coq_Sigma dummyPos_unit.dummy_pos []
          (Bits_t 0) (Obj.magic desugared))
@@ -2738,17 +2795,33 @@ module NOCImpl =
       match Obj.magic h with
       | Coq_r1 -> 'r'::('1'::[])
       | Coq_r2 -> 'r'::('2'::[])
-      | Coq_r3 -> 'r'::('3'::[])) }; koika_reg_types = (Obj.magic coq_R);
+      | Coq_r3 -> 'r'::('3'::[])
+      | Coq_r4 -> 'r'::('4'::[])
+      | Coq_r5 -> 'r'::('5'::[])
+      | Coq_r6 -> 'r'::('6'::[])
+      | Coq_r7 -> 'r'::('7'::[])) }; koika_reg_types = (Obj.magic coq_R);
       koika_reg_init = (Obj.magic r); koika_reg_finite = { finite_index =
       (fun h ->
       match Obj.magic h with
       | Coq_r1 -> 0
       | Coq_r2 -> Stdlib.Int.succ 0
-      | Coq_r3 -> Stdlib.Int.succ (Stdlib.Int.succ 0)); finite_elements =
-      ((Obj.magic Coq_r1) :: ((Obj.magic Coq_r2) :: ((Obj.magic Coq_r3) :: []))) };
-      koika_ext_fn_types = (Obj.magic coq_Sigma); koika_rules =
-      (Obj.magic rules); koika_rule_external = (Obj.magic coq_external);
-      koika_rule_names = { show0 = (fun h ->
+      | Coq_r3 -> Stdlib.Int.succ (Stdlib.Int.succ 0)
+      | Coq_r4 -> Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ 0))
+      | Coq_r5 ->
+        Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+          0)))
+      | Coq_r6 ->
+        Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+          (Stdlib.Int.succ 0))))
+      | Coq_r7 ->
+        Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ (Stdlib.Int.succ
+          (Stdlib.Int.succ (Stdlib.Int.succ 0)))))); finite_elements =
+      ((Obj.magic Coq_r1) :: ((Obj.magic Coq_r2) :: ((Obj.magic Coq_r3) :: (
+      (Obj.magic Coq_r4) :: ((Obj.magic Coq_r5) :: ((Obj.magic Coq_r6) :: (
+      (Obj.magic Coq_r7) :: []))))))) }; koika_ext_fn_types =
+      (Obj.magic coq_Sigma); koika_rules = (Obj.magic rules);
+      koika_rule_external = (Obj.magic coq_external); koika_rule_names =
+      { show0 = (fun h ->
       match Obj.magic h with
       | Coq_router_1 ->
         'r'::('o'::('u'::('t'::('e'::('r'::('_'::('1'::[])))))))

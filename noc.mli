@@ -35,6 +35,10 @@ module Nat :
  sig
   val pred : int -> int
 
+  val add : int -> int -> int
+
+  val mul : int -> int -> int
+
   val compare : int -> int -> comparison
 
   val max : int -> int -> int
@@ -672,8 +676,18 @@ type var_t = char list
 
 type fn_name_t = char list
 
-module Types :
+module type Typesize =
  sig
+  val nocsize : int
+
+  val data_sz : int
+ end
+
+module Types :
+ functor (TS:Typesize) ->
+ sig
+  val addr_sz : int
+
   val sz : int
 
   val basic_flit : type0 struct_sig'
@@ -690,7 +704,19 @@ module type Registers =
 
 module Router :
  functor (Regs:Registers) ->
+ functor (MyTypes:Typesize) ->
  sig
+  module NOC_type :
+   sig
+    val addr_sz : int
+
+    val sz : int
+
+    val basic_flit : type0 struct_sig'
+
+    val router_address : type0 struct_sig'
+   end
+
   val r_send :
     Regs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
     Regs.ext_fn_t) uaction) internalFunction
@@ -699,12 +725,15 @@ module Router :
     Regs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
     Regs.ext_fn_t) uaction) internalFunction
 
+  val bz : bool vect
+
   val _routestart_r :
     int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
     Regs.ext_fn_t) uaction) internalFunction -> (var_t, fn_name_t, (pos_t,
     var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction) internalFunction ->
-    Regs.ext_fn_t -> Regs.ext_fn_t -> (pos_t, var_t, fn_name_t, Regs.reg_t,
-    Regs.ext_fn_t) uaction
+    (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t)
+    uaction) internalFunction -> Regs.ext_fn_t -> Regs.ext_fn_t -> (pos_t,
+    var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction
 
   val _routecenter_r :
     int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
@@ -712,37 +741,62 @@ module Router :
     var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction) internalFunction ->
     (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t)
     uaction) internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
-    Regs.reg_t, Regs.ext_fn_t) uaction) internalFunction -> Regs.ext_fn_t ->
-    Regs.ext_fn_t -> (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t)
-    uaction
+    Regs.reg_t, Regs.ext_fn_t) uaction) internalFunction -> (var_t,
+    fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction)
+    internalFunction -> Regs.ext_fn_t -> Regs.ext_fn_t -> (pos_t, var_t,
+    fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction
 
   val _routeend_r :
     int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t,
     Regs.ext_fn_t) uaction) internalFunction -> (var_t, fn_name_t, (pos_t,
     var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction) internalFunction ->
-    Regs.ext_fn_t -> Regs.ext_fn_t -> (pos_t, var_t, fn_name_t, Regs.reg_t,
-    Regs.ext_fn_t) uaction
+    (var_t, fn_name_t, (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t)
+    uaction) internalFunction -> Regs.ext_fn_t -> Regs.ext_fn_t -> (pos_t,
+    var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction
 
   val routecenterfn :
+    int -> Regs.reg_t -> Regs.reg_t -> Regs.reg_t -> Regs.ext_fn_t ->
+    Regs.ext_fn_t -> (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t)
+    uaction
+
+  val routestartfn :
     int -> Regs.reg_t -> Regs.reg_t -> Regs.ext_fn_t -> Regs.ext_fn_t ->
     (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction
 
-  val routestartfn :
-    int -> Regs.reg_t -> Regs.ext_fn_t -> Regs.ext_fn_t -> (pos_t, var_t,
-    fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction
-
   val routeendfn :
-    int -> Regs.reg_t -> Regs.ext_fn_t -> Regs.ext_fn_t -> (pos_t, var_t,
-    fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction
+    int -> Regs.reg_t -> Regs.reg_t -> Regs.ext_fn_t -> Regs.ext_fn_t ->
+    (pos_t, var_t, fn_name_t, Regs.reg_t, Regs.ext_fn_t) uaction
+ end
+
+module MyTypes :
+ sig
+  val nocsize : int
+
+  val data_sz : int
  end
 
 module NOCImpl :
  sig
+  module NOC_type :
+   sig
+    val addr_sz : int
+
+    val sz : int
+
+    val basic_flit : type0 struct_sig'
+
+    val router_address : type0 struct_sig'
+   end
+
   module Coq__1 : sig
    type reg_t =
    | Coq_r1
    | Coq_r2
    | Coq_r3
+   | Coq_r4
+   | Coq_r5
+   | Coq_r6
+   | Coq_r7
   end
   include module type of struct include Coq__1 end
 
@@ -772,10 +826,19 @@ module NOCImpl :
     type ext_fn_t = Coq__2.ext_fn_t
    end
 
-  val coq_Sigma : ext_fn_t -> externalSignature
-
   module Routerfns :
    sig
+    module NOC_type :
+     sig
+      val addr_sz : int
+
+      val sz : int
+
+      val basic_flit : type0 struct_sig'
+
+      val router_address : type0 struct_sig'
+     end
+
     val r_send :
       MyRegs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
       MyRegs.reg_t, MyRegs.ext_fn_t) uaction) internalFunction
@@ -784,12 +847,16 @@ module NOCImpl :
       MyRegs.reg_t -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
       MyRegs.reg_t, MyRegs.ext_fn_t) uaction) internalFunction
 
+    val bz : bool vect
+
     val _routestart_r :
       int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t,
       MyRegs.ext_fn_t) uaction) internalFunction -> (var_t, fn_name_t,
       (pos_t, var_t, fn_name_t, MyRegs.reg_t, MyRegs.ext_fn_t) uaction)
-      internalFunction -> MyRegs.ext_fn_t -> MyRegs.ext_fn_t -> (pos_t,
-      var_t, fn_name_t, MyRegs.reg_t, MyRegs.ext_fn_t) uaction
+      internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
+      MyRegs.reg_t, MyRegs.ext_fn_t) uaction) internalFunction ->
+      MyRegs.ext_fn_t -> MyRegs.ext_fn_t -> (pos_t, var_t, fn_name_t,
+      MyRegs.reg_t, MyRegs.ext_fn_t) uaction
 
     val _routecenter_r :
       int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t,
@@ -798,29 +865,37 @@ module NOCImpl :
       internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
       MyRegs.reg_t, MyRegs.ext_fn_t) uaction) internalFunction -> (var_t,
       fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t, MyRegs.ext_fn_t)
-      uaction) internalFunction -> MyRegs.ext_fn_t -> MyRegs.ext_fn_t ->
-      (pos_t, var_t, fn_name_t, MyRegs.reg_t, MyRegs.ext_fn_t) uaction
+      uaction) internalFunction -> (var_t, fn_name_t, (pos_t, var_t,
+      fn_name_t, MyRegs.reg_t, MyRegs.ext_fn_t) uaction) internalFunction ->
+      MyRegs.ext_fn_t -> MyRegs.ext_fn_t -> (pos_t, var_t, fn_name_t,
+      MyRegs.reg_t, MyRegs.ext_fn_t) uaction
 
     val _routeend_r :
       int -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t, MyRegs.reg_t,
       MyRegs.ext_fn_t) uaction) internalFunction -> (var_t, fn_name_t,
       (pos_t, var_t, fn_name_t, MyRegs.reg_t, MyRegs.ext_fn_t) uaction)
-      internalFunction -> MyRegs.ext_fn_t -> MyRegs.ext_fn_t -> (pos_t,
-      var_t, fn_name_t, MyRegs.reg_t, MyRegs.ext_fn_t) uaction
+      internalFunction -> (var_t, fn_name_t, (pos_t, var_t, fn_name_t,
+      MyRegs.reg_t, MyRegs.ext_fn_t) uaction) internalFunction ->
+      MyRegs.ext_fn_t -> MyRegs.ext_fn_t -> (pos_t, var_t, fn_name_t,
+      MyRegs.reg_t, MyRegs.ext_fn_t) uaction
 
     val routecenterfn :
+      int -> MyRegs.reg_t -> MyRegs.reg_t -> MyRegs.reg_t -> MyRegs.ext_fn_t
+      -> MyRegs.ext_fn_t -> (pos_t, var_t, fn_name_t, MyRegs.reg_t,
+      MyRegs.ext_fn_t) uaction
+
+    val routestartfn :
       int -> MyRegs.reg_t -> MyRegs.reg_t -> MyRegs.ext_fn_t ->
       MyRegs.ext_fn_t -> (pos_t, var_t, fn_name_t, MyRegs.reg_t,
       MyRegs.ext_fn_t) uaction
 
-    val routestartfn :
-      int -> MyRegs.reg_t -> MyRegs.ext_fn_t -> MyRegs.ext_fn_t -> (pos_t,
-      var_t, fn_name_t, MyRegs.reg_t, MyRegs.ext_fn_t) uaction
-
     val routeendfn :
-      int -> MyRegs.reg_t -> MyRegs.ext_fn_t -> MyRegs.ext_fn_t -> (pos_t,
-      var_t, fn_name_t, MyRegs.reg_t, MyRegs.ext_fn_t) uaction
+      int -> MyRegs.reg_t -> MyRegs.reg_t -> MyRegs.ext_fn_t ->
+      MyRegs.ext_fn_t -> (pos_t, var_t, fn_name_t, MyRegs.reg_t,
+      MyRegs.ext_fn_t) uaction
    end
+
+  val coq_Sigma : ext_fn_t -> externalSignature
 
   val coq_R : reg_t -> type0
 

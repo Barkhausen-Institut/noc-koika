@@ -117,7 +117,7 @@ Definition _routecenter_r (r_addr2: nat) (r0_send r1_send r0_receive r1_receive 
       else if dest < r_addr then
       r0_send(pack(subst(msg, src, r_addr)))
       else
-      rtile_send(extcall Tile_Out(m0));
+      rtile_send(extcall Tile_Out(m1));
       r1_send(pack(subst(msg, new, |1`d0|))) (* To stop the packet from being processed again*)
   else
   pass ))
