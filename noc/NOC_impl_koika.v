@@ -201,10 +201,18 @@ Inductive Koika.Syntax.uaction
       Success b'                      = type_action R Sigma pos ((x, `e') :: sig) b ->
       Success (EX (Bind x ``e' ``b')) = type_action R Sigma pos sig (UBind x e b)  .
     Proof.
+    (* intros.
+    eexists.
+    cbn.
+    rewrite H1.
+    rewrite H2.
+    reflexivity.
     intros.
+    destruct H as [a1 H1 H2].
+    destruct H0.
     rewrite /type_action.
     rewrite -/[type_action R Sigma pos sig e].
-    rewrite /H/H0.
+    rewrite /H/H0. *)
     Admitted.
 
     Definition actpos {reg_t ext_fn_t} pos (e: uaction reg_t ext_fn_t) :=
@@ -280,7 +288,6 @@ Inductive Koika.Syntax.uaction
       2: {
       rewrite /projT1.
       
-      rewrite /r_receive/desugar_action'.
 
       erewrite <- (@ubind rule_name_t _ _ _ _ _ _
         (UInternalCall _ _) (UBind "msg" _ _)).
