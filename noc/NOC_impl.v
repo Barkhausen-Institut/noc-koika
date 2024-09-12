@@ -15,7 +15,7 @@ Import MCMonadNotation.
 From MetaCoq Require Import bytestring.
 Open Scope bs.
 (* Definition nocsize :=4. *)
-Definition regno := (Nat.sub nocsize 1).
+Definition regno :=  Nat.add nocsize (Nat.sub nocsize 1).
 Definition regprefix := "r".
 Definition ruleprefix := "router_".
 Definition extfnprefix := "extfn_".
@@ -101,6 +101,13 @@ Fixpoint nat_to_term (n : nat) : term :=
                         "NOCImpl"%bs, "reg_t"%bs);
                   inductive_ind := 0
                 |} 0 [];
+                tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["NOC_impl"%bs])
+                        "NOCImpl"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} (Nat.sub nocsize 1) [];
                 generate_ext_fn_args 0; generate_ext_fn_args 1]|} in
     [branchterm]
     | S n' => let branchterm := {|
@@ -124,6 +131,13 @@ Fixpoint nat_to_term (n : nat) : term :=
                   "NOCImpl"%bs, "reg_t"%bs);
              inductive_ind := 0
            |} n' [];
+           tConstruct
+           {|
+             inductive_mind :=
+               (MPdot (MPfile ["NOC_impl"%bs])
+                   "NOCImpl"%bs, "reg_t"%bs);
+             inductive_ind := 0
+           |} (Nat.add (Nat.sub n' 1) nocsize) [];
            generate_ext_fn_args (Nat.mul 2 n'); generate_ext_fn_args (Nat.add (Nat.mul 2 n') 1)]
   |} in
   branchterm :: generate_branches n'
@@ -148,12 +162,19 @@ Fixpoint nat_to_term (n : nat) : term :=
                   "NOCImpl"%bs, "reg_t"%bs);
             inductive_ind := 0
           |} (Nat.sub nocsize 2) [];
+          tConstruct
+          {|
+            inductive_mind :=
+              (MPdot (MPfile ["NOC_impl"%bs])
+                  "NOCImpl"%bs, "reg_t"%bs);
+            inductive_ind := 0
+          |} (Nat.add (Nat.sub nocsize 2) nocsize) [];
           generate_ext_fn_args (Nat.sub (Nat.mul 2 nocsize) 2); generate_ext_fn_args (Nat.sub (Nat.mul 2 nocsize) 1)]
   |} in
     l ++ [last_term]
     end.
 
-Definition branch_body := Eval compute in add_last_router(rev(generate_branches regno)).
+Definition branch_body := Eval compute in add_last_router(rev(generate_branches (Nat.sub nocsize 1))).
 
 Definition match_syn := (tLambda {| binder_name := nNamed "rl"%bs; binder_relevance := Relevant |}
 (tInd
@@ -246,20 +267,24 @@ Definition scheduler_synatx := Eval compute in (generate_scheduler nocsize).
 
 End NOCSyntax.
 
-
+Module MyTypes <: Typesize.
+Definition nocsize := 4.
+Definition data_sz := 4.  
+End MyTypes.
 
 Module MyNOCSize <: NOC_data.
-  Definition nocsize := 4.  
+  Definition nocsize := 4.
 End MyNOCSize.
 
 Module NOCImpl. 
-Print  Registers.
+(* Print  Registers. *)
 
 Import MCMonadNotation.
 Module NOC_syn := NOCSyntax(MyNOCSize).
+Module NOC_type := Types(MyTypes).
 Import NOC_syn.
 Import MyNOCSize.
-Import Types.
+Import NOC_type.
 
 Definition interfacesize := Nat.mul nocsize 2.
 
@@ -278,13 +303,18 @@ Definition reg_t:=reg_t.
 Definition ext_fn_t:= ext_fn_t.
 End MyRegs.
 
+
+Module Routerfns:= Router(MyRegs)(MyTypes).
+Import Routerfns.
+
+
+
 Definition Sigma (fn: ext_fn_t) : ExternalSignature :=
   match fn with
   | _ => {$ bits_t sz ~> bits_t sz $}
   end.
 
-Module Routerfns:= Router(MyRegs).
-Import Routerfns.
+
 Definition R ( reg : reg_t ) :=
   match reg with
   |  _ => bits_t (struct_sz basic_flit)
@@ -297,16 +327,16 @@ Definition r (reg : reg_t) : R reg :=
 
  (* Definition to_action (rl: rule_name_t) := 
   match rl with
-  | router_1 => routestartfn 0 r1 extfn_1 extfn_2
-  | router_2 => routecenterfn 1 r1 r2 extfn_3 extfn_4
-  | router_3 => routecenterfn 2 r2 r3 extfn_5 extfn_6
-  | router_4 => routeendfn 3 r3 extfn_7 extfn_8
+  | router_1 => routestartfn 0 r1 r4 extfn_1 extfn_2
+  | router_2 => routecenterfn 1 r1 r2 r5 extfn_3 extfn_4
+  | router_3 => routecenterfn 2 r2 r3 r6 extfn_5 extfn_6
+  | router_4 => routeendfn 3 r3 r7 extfn_7 extfn_8
   end.
 
 Check to_action.
 
 MetaCoq Quote Definition testl:= Eval unfold to_action in to_action.
-Print testl.  *)
+Print testl.   *)
 
 MetaCoq Run ( tmMkDefinition "to_action"%bs match_syn).  
 
@@ -314,7 +344,6 @@ Print to_action.
 
 MetaCoq Run ( tmMkDefinition "schedule"%bs scheduler_synatx). 
 
-Print _routestart_r.
 Definition external (r: rule_name_t) := false.
 
 
