@@ -281,10 +281,10 @@ Module NOCImpl.
 
 Import MCMonadNotation.
 Module NOC_syn := NOCSyntax(MyNOCSize).
-Module NOC_type := Types(MyTypes).
+(* Module NOC_type := Types(MyTypes). *)
 Import NOC_syn.
 Import MyNOCSize.
-Import NOC_type.
+(* Import NOC_type. *)
 
 Definition interfacesize := Nat.mul nocsize 2.
 
@@ -306,6 +306,7 @@ End MyRegs.
 
 Module Routerfns:= Router(MyRegs)(MyTypes).
 Import Routerfns.
+Import NOC_type.   (*TODO Is there a way to avoid this additio*)
 
 
 
@@ -429,6 +430,7 @@ Definition sigdenote fn : Sig_denote (Sigma fn) :=
   | _ => fun x => x +b (Bits.of_nat 9 0)
   end.
 
+
 Definition r_r2l (reg : reg_t) : R reg :=
   match reg with
   |  r1 => Bits.zero
@@ -495,16 +497,22 @@ Bits.to_nat bits_r0 = 432)).
   Defined.
 
 
-  (* Definition r_l2r' (reg : reg_t) : R reg :=
+Definition sigdenote2 fn : Sig_denote (Sigma fn) :=
+  match fn with
+  | extfn_1 => fun x => x +b (Bits.of_nat 9 304)
+  | _ => fun x => x +b (Bits.of_nat 9 0)
+  end.
+
+  Definition r_l2r_input_interface (reg : reg_t) : R reg :=
     match reg with
-    |  r1 => Bits.of_nat 9 304 
+    |  r1 => Bits.zero
     |  r2 => Bits.zero
     |  r3 => Bits.zero
     | _ => Bits.zero
     end.
 
   Goal
-  run_schedule r_l2r' rules sigdenote schedule
+  run_schedule r_l2r_input_interface rules sigdenote2 schedule
   (fun ctxt =>
   let r' := (fun idx => 
   match idx with
@@ -521,33 +529,69 @@ Bits.to_nat bits_r0 = 432)).
   (fun ctxt2 =>
   let r'' := (fun idx => 
   match idx with
-  | r1=> ctxt.[r1]
-  | r2=> ctxt.[r2]
-  | r3=> ctxt.[r3]
-  | r4=> ctxt.[r4]
-  | r5=> ctxt.[r5]
-  | r6=> ctxt.[r6]
-  | r7=> ctxt.[r7]
+  | r1=> ctxt2.[r1]
+  | r2=> ctxt2.[r2]
+  | r3=> ctxt2.[r3]
+  | r4=> ctxt2.[r4]
+  | r5=> ctxt2.[r5]
+  | r6=> ctxt2.[r6]
+  | r7=> ctxt2.[r7]
     end ) in
 
     run_schedule r'' rules sigdenote schedule
 (fun ctxt3 =>
 let r''' := (fun idx => 
 match idx with
-| r1=> ctxt.[r1]
-| r2=> ctxt.[r2]
-| r3=> ctxt.[r3]
-| r4=> ctxt.[r4]
-| r5=> ctxt.[r5]
-| r6=> ctxt.[r6]
-| r7=> ctxt.[r7]
+| r1=> ctxt3.[r1]
+| r2=> ctxt3.[r2]
+| r3=> ctxt3.[r3]
+| r4=> ctxt3.[r4]
+| r5=> ctxt3.[r5]
+| r6=> ctxt3.[r6]
+| r7=> ctxt3.[r7]
   end ) in
   run_schedule r''' rules sigdenote schedule
   (fun ctxt4 =>
-let bits_r0 := ctxt4.[r7]in
-Bits.to_nat bits_r0 = 432)))).
+let bits_out := ctxt4.[r7]in
+let bits_in := ctxt.[r1] in
+let bits_r3 := ctxt3.[r3] in
+Bits.to_nat bits_out = 432 /\
+Bits.to_nat bits_r3 = 432 /\
+Bits.to_nat bits_in = 304 )))). (*Check acknowledge register, check rightmost noc reg, and check input*)
   Proof.
     check.
-  Defined. *)
+  Defined.
 
+(*Load right*)
+Definition sigdenote3 fn : Sig_denote (Sigma fn) :=
+    match fn with
+    | extfn_3 => fun x => x +b (Bits.of_nat 9 370)
+    | _ => fun x => x +b (Bits.of_nat 9 0)
+    end.
+  
+    Goal
+    run_schedule r_l2r_input_interface rules sigdenote3 schedule
+    (fun ctxt => 
+    let bits_r0 := ctxt.[r2]in
+    Bits.to_nat bits_r0 = 370).
+    Proof.
+    check.
+    Defined.
+
+(*Load left*)    
+Definition sigdenote4 fn : Sig_denote (Sigma fn) :=
+    match fn with
+    | extfn_3 => fun x => x +b (Bits.of_nat 9 322)
+    | _ => fun x => x +b (Bits.of_nat 9 0)
+    end.
+  
+    Goal
+    run_schedule r_l2r_input_interface rules sigdenote4 schedule
+    (fun ctxt => 
+    let bits_r0 := ctxt.[r1]in
+    Bits.to_nat bits_r0 = 322).
+    Proof.
+    check.
+    Defined.
+  
 End Proofs.
