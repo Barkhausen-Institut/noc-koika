@@ -347,7 +347,8 @@ MetaCoq Run ( tmMkDefinition "schedule"%bs scheduler_synatx).
 
 Definition external (r: rule_name_t) := false.
 
-
+Definition snocsize:= string_of_nat nocsize.
+Definition module_name:= String.to_string (String.append "NoC"%bs snocsize).
 Definition rules :=
   tc_rules R Sigma to_action.
 
@@ -361,7 +362,7 @@ Definition rules :=
     koika_rules := rules;
     koika_rule_external := external;
     koika_scheduler := schedule;
-    koika_module_name := "NoC"
+    koika_module_name :=module_name
     |};
     
     ip_sim := {| sp_ext_fn_specs fn :=
