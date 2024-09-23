@@ -7,14 +7,15 @@ End NOC_data.
 
 Module NOCSyntax (ND:NOC_data).
 Import ND.
-Import MCMonadNotation.
 Require Import List.
+Import MCMonadNotation.
 From MetaCoq Require Import bytestring.
 Open Scope bs.
 (* Definition nocsize :=4. *)
-Definition regno := (Nat.sub nocsize 1).
+Definition regno :=  Nat.add nocsize (Nat.sub nocsize 1).
 Definition regprefix := "r".
 Definition ruleprefix := "router_".
+Definition extfnprefix := "extfn_".
 
 Fixpoint rev {A : Type} (l:list A) : list A :=
     match l with
@@ -72,6 +73,14 @@ Fixpoint nat_to_term (n : nat) : term :=
           |} 1 []) [nat_to_term n']
   end.
 
+  Definition generate_ext_fn_args (n:nat):=
+    tConstruct
+               {|
+                 inductive_mind :=
+                   (MPdot (MPfile ["NOC_impl"]) "NOCImpl", "ext_fn_t");
+                 inductive_ind := 0
+               |} n [].
+  
   Fixpoint generate_branches (n:nat): list (branch term) :=
     match n with
     | 0 => []
@@ -80,39 +89,53 @@ Fixpoint nat_to_term (n : nat) : term :=
           bbody :=
             tApp
               (tConst
-                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
-                  "routestartfn"%bs) [])
+              (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "Routerfns", "routestartfn")[])
               [(nat_to_term 0);
               tConstruct
                 {|
                   inductive_mind :=
-                    (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-                        "Registers"%bs, "reg_t"%bs);
+                    (MPdot (MPfile ["NOC_impl"%bs])
+                        "NOCImpl"%bs, "reg_t"%bs);
                   inductive_ind := 0
-                |} 0 []]|} in
+                |} 0 [];
+                tConstruct
+                {|
+                  inductive_mind :=
+                    (MPdot (MPfile ["NOC_impl"%bs])
+                        "NOCImpl"%bs, "reg_t"%bs);
+                  inductive_ind := 0
+                |} (Nat.sub nocsize 1) [];
+                generate_ext_fn_args 0; generate_ext_fn_args 1]|} in
     [branchterm]
     | S n' => let branchterm := {|
     bcontext := [];
     bbody :=
       tApp
         (tConst
-           (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
-            "routecenterfn"%bs) [])
+        (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "Routerfns", "routecenterfn") [])
         [ (nat_to_term n');
          tConstruct
            {|
              inductive_mind :=
-               (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-                  "Registers"%bs, "reg_t"%bs);
+               (MPdot (MPfile ["NOC_impl"%bs])
+                  "NOCImpl"%bs, "reg_t"%bs);
              inductive_ind := 0
            |} (Nat.sub n' 1) [];
          tConstruct
            {|
              inductive_mind :=
-               (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-                  "Registers"%bs, "reg_t"%bs);
+               (MPdot (MPfile ["NOC_impl"%bs])
+                  "NOCImpl"%bs, "reg_t"%bs);
              inductive_ind := 0
-           |} n' []]
+           |} n' [];
+           tConstruct
+           {|
+             inductive_mind :=
+               (MPdot (MPfile ["NOC_impl"%bs])
+                   "NOCImpl"%bs, "reg_t"%bs);
+             inductive_ind := 0
+           |} (Nat.add (Nat.sub n' 1) nocsize) [];
+           generate_ext_fn_args (Nat.mul 2 n'); generate_ext_fn_args (Nat.add (Nat.mul 2 n') 1)]
   |} in
   branchterm :: generate_branches n'
     end.
@@ -127,27 +150,34 @@ Fixpoint nat_to_term (n : nat) : term :=
     bbody :=
       tApp
         (tConst
-          (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Design"%bs,
-            "routeendfn"%bs) [])
+        (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "Routerfns", "routeendfn") [])
         [(nat_to_term (Nat.sub nocsize 1));
         tConstruct
           {|
             inductive_mind :=
-              (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-                  "Registers"%bs, "reg_t"%bs);
+              (MPdot (MPfile ["NOC_impl"%bs])
+                  "NOCImpl"%bs, "reg_t"%bs);
             inductive_ind := 0
-          |} (Nat.sub nocsize 2) []]
+          |} (Nat.sub nocsize 2) [];
+          tConstruct
+          {|
+            inductive_mind :=
+              (MPdot (MPfile ["NOC_impl"%bs])
+                  "NOCImpl"%bs, "reg_t"%bs);
+            inductive_ind := 0
+          |} (Nat.add (Nat.sub nocsize 2) nocsize) [];
+          generate_ext_fn_args (Nat.sub (Nat.mul 2 nocsize) 2); generate_ext_fn_args (Nat.sub (Nat.mul 2 nocsize) 1)]
   |} in
     l ++ [last_term]
     end.
 
-Definition branch_body := Eval compute in add_last_router(rev(generate_branches regno)).
+Definition branch_body := Eval compute in add_last_router(rev(generate_branches (Nat.sub nocsize 1))).
 
 Definition match_syn := (tLambda {| binder_name := nNamed "rl"%bs; binder_relevance := Relevant |}
 (tInd
  {|
      inductive_mind :=
-       (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Registers"%bs,
+       (MPdot (MPfile ["NOC_impl"%bs]) "NOCImpl"%bs,
         "rule_name_t"%bs);
      inductive_ind := 0
    |} [])
@@ -156,7 +186,7 @@ Definition match_syn := (tLambda {| binder_name := nNamed "rl"%bs; binder_releva
      ci_ind :=
        {|
          inductive_mind :=
-           (MPdot (MPfile ["Pipeline_NOC_parametric"%bs]) "Registers"%bs,
+           (MPdot (MPfile ["NOC_impl"%bs]) "NOCImpl"%bs,
             "rule_name_t"%bs);
          inductive_ind := 0
        |};
@@ -168,30 +198,22 @@ Definition match_syn := (tLambda {| binder_name := nNamed "rl"%bs; binder_releva
      pparams := [];
      pcontext :=
        [{| binder_name := nNamed "rl"%bs; binder_relevance := Relevant |}];
-     preturn :=
+       preturn :=
        tApp
          (tInd
             {|
-              inductive_mind :=
-                (MPfile ["Syntax"%bs; "Koika"%bs], "uaction"%bs);
+              inductive_mind := (MPfile ["Syntax"; "Koika"], "uaction");
               inductive_ind := 0
             |} [])
-         [tConst (MPfile ["Frontend"%bs; "Koika"%bs], "pos_t"%bs) [];
-          tConst (MPfile ["Frontend"%bs; "Koika"%bs], "var_t"%bs) [];
-          tConst (MPfile ["Frontend"%bs; "Koika"%bs], "fn_name_t"%bs) [];
-          tInd
-            {|
-              inductive_mind :=
-                (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-                   "Registers"%bs, "reg_t"%bs);
-              inductive_ind := 0
-            |} [];
-          tInd
-            {|
-              inductive_mind :=
-                (MPfile ["Interop"%bs; "Koika"%bs], "empty_ext_fn_t"%bs);
-              inductive_ind := 0
-            |} []]
+         [tConst (MPfile ["Frontend"; "Koika"], "pos_t") [];
+          tConst (MPfile ["Frontend"; "Koika"], "var_t") [];
+          tConst (MPfile ["Frontend"; "Koika"], "fn_name_t") [];
+          tConst
+            (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "MyRegs",
+             "reg_t") [];
+          tConst
+            (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "MyRegs",
+             "ext_fn_t") []]
    |} (tRel 0)
      branch_body
      )).
@@ -209,8 +231,8 @@ Fixpoint generate_scheduler (n: nat) : term :=
   tInd
     {|
       inductive_mind :=
-        (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-           "Registers"%bs, "rule_name_t"%bs);
+        (MPdot (MPfile ["NOC_impl"%bs])
+           "NOCImpl"%bs, "rule_name_t"%bs);
       inductive_ind := 0
     |} []] in sterm
     | S n' => let sterm:= tApp (tConstruct
@@ -223,15 +245,15 @@ Fixpoint generate_scheduler (n: nat) : term :=
     tInd
       {|
         inductive_mind :=
-          (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-             "Registers"%bs, "rule_name_t"%bs);
+          (MPdot (MPfile ["NOC_impl"%bs])
+             "NOCImpl"%bs, "rule_name_t"%bs);
         inductive_ind := 0
       |} [];
     tConstruct
       {|
         inductive_mind :=
-          (MPdot (MPfile ["Pipeline_NOC_parametric"%bs])
-             "Registers"%bs, "rule_name_t"%bs);
+          (MPdot (MPfile ["NOC_impl"%bs])
+             "NOCImpl"%bs, "rule_name_t"%bs);
         inductive_ind := 0
       |} n' []; generate_scheduler n' ]
       in sterm
@@ -239,5 +261,5 @@ Fixpoint generate_scheduler (n: nat) : term :=
 
 Definition scheduler_synatx := Eval compute in (generate_scheduler nocsize).
 
-End NOCSyntax.
 
+End NOCSyntax.

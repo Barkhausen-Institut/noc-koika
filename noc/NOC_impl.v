@@ -1,271 +1,10 @@
-Require Import MetaCoq.Template.All.
+From MetaCoq.Template Require Import All.
 Require Import Types.
 Require Import Router. 
 Require Import Koika.Frontend.
 Require Import Koika.Std.
 Require Import Koika.Testing.
-Module Type NOC_data.
-  Parameter nocsize: nat.
-End NOC_data.
-
-Module NOCSyntax (ND:NOC_data).
-Import ND.
-Require Import List.
-Import MCMonadNotation.
-From MetaCoq Require Import bytestring.
-Open Scope bs.
-(* Definition nocsize :=4. *)
-Definition regno :=  Nat.add nocsize (Nat.sub nocsize 1).
-Definition regprefix := "r".
-Definition ruleprefix := "router_".
-Definition extfnprefix := "extfn_".
-
-Fixpoint rev {A : Type} (l:list A) : list A :=
-    match l with
-      | nil => nil
-      | x :: l' => rev l' ++ x :: nil
-    end.
-
-Fixpoint generate_constructors (prefix: string) (n : nat) : list constructor_body :=
-  match n with
-  | 0 => []
-  | S n' =>
-    let name := prefix ++ string_of_nat (S n') in
-    let cstr := {| cstr_name := name;
-                   cstr_args := [];
-                   cstr_indices := [];
-                   cstr_type := tRel 0;
-                   cstr_arity := 0 |} in
-    cstr :: generate_constructors prefix n'
-  end.
-
-
-Definition quoteind (ind_name : string) (prefix : string) (no_cstr :nat) :=  {|
-ind_finite := Finite;
-ind_npars := 0;
-ind_params := [];
-ind_bodies :=
-[{|
-     ind_name := ind_name;
-     ind_indices := [];
-     ind_sort := sType (Universe.make' Level.lzero);
-     ind_type := tSort (sType (Universe.make' Level.lzero));
-     ind_kelim := IntoAny;
-     ind_ctors := rev (generate_constructors prefix no_cstr);
-     ind_projs := [];
-     ind_relevance := Relevant
-   |}];
-ind_universes := Monomorphic_ctx;
-ind_variance := None
-|}.
-
-Fixpoint nat_to_term (n : nat) : term :=
-  match n with
-  | 0 => tConstruct
-          {|
-            inductive_mind :=
-              (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "nat"%bs);
-            inductive_ind := 0
-          |} 0 []
-  | S n' => tApp
-        (tConstruct
-          {|
-            inductive_mind :=
-              (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "nat"%bs);
-            inductive_ind := 0
-          |} 1 []) [nat_to_term n']
-  end.
-
-  Definition generate_ext_fn_args (n:nat):=
-    tConstruct
-               {|
-                 inductive_mind :=
-                   (MPdot (MPfile ["NOC_impl"]) "NOCImpl", "ext_fn_t");
-                 inductive_ind := 0
-               |} n [].
-  
-  Fixpoint generate_branches (n:nat): list (branch term) :=
-    match n with
-    | 0 => []
-    | 1 => let branchterm := {|
-          bcontext := [];
-          bbody :=
-            tApp
-              (tConst
-              (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "Routerfns", "routestartfn")[])
-              [(nat_to_term 0);
-              tConstruct
-                {|
-                  inductive_mind :=
-                    (MPdot (MPfile ["NOC_impl"%bs])
-                        "NOCImpl"%bs, "reg_t"%bs);
-                  inductive_ind := 0
-                |} 0 [];
-                tConstruct
-                {|
-                  inductive_mind :=
-                    (MPdot (MPfile ["NOC_impl"%bs])
-                        "NOCImpl"%bs, "reg_t"%bs);
-                  inductive_ind := 0
-                |} (Nat.sub nocsize 1) [];
-                generate_ext_fn_args 0; generate_ext_fn_args 1]|} in
-    [branchterm]
-    | S n' => let branchterm := {|
-    bcontext := [];
-    bbody :=
-      tApp
-        (tConst
-        (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "Routerfns", "routecenterfn") [])
-        [ (nat_to_term n');
-         tConstruct
-           {|
-             inductive_mind :=
-               (MPdot (MPfile ["NOC_impl"%bs])
-                  "NOCImpl"%bs, "reg_t"%bs);
-             inductive_ind := 0
-           |} (Nat.sub n' 1) [];
-         tConstruct
-           {|
-             inductive_mind :=
-               (MPdot (MPfile ["NOC_impl"%bs])
-                  "NOCImpl"%bs, "reg_t"%bs);
-             inductive_ind := 0
-           |} n' [];
-           tConstruct
-           {|
-             inductive_mind :=
-               (MPdot (MPfile ["NOC_impl"%bs])
-                   "NOCImpl"%bs, "reg_t"%bs);
-             inductive_ind := 0
-           |} (Nat.add (Nat.sub n' 1) nocsize) [];
-           generate_ext_fn_args (Nat.mul 2 n'); generate_ext_fn_args (Nat.add (Nat.mul 2 n') 1)]
-  |} in
-  branchterm :: generate_branches n'
-    end.
-  
-  
-  Definition add_last_router (l : list (branch term)) : list (branch term) :=
-    match l with
-    | [] => []
-    | _ =>
-    let last_term := {|
-    bcontext := [];
-    bbody :=
-      tApp
-        (tConst
-        (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "Routerfns", "routeendfn") [])
-        [(nat_to_term (Nat.sub nocsize 1));
-        tConstruct
-          {|
-            inductive_mind :=
-              (MPdot (MPfile ["NOC_impl"%bs])
-                  "NOCImpl"%bs, "reg_t"%bs);
-            inductive_ind := 0
-          |} (Nat.sub nocsize 2) [];
-          tConstruct
-          {|
-            inductive_mind :=
-              (MPdot (MPfile ["NOC_impl"%bs])
-                  "NOCImpl"%bs, "reg_t"%bs);
-            inductive_ind := 0
-          |} (Nat.add (Nat.sub nocsize 2) nocsize) [];
-          generate_ext_fn_args (Nat.sub (Nat.mul 2 nocsize) 2); generate_ext_fn_args (Nat.sub (Nat.mul 2 nocsize) 1)]
-  |} in
-    l ++ [last_term]
-    end.
-
-Definition branch_body := Eval compute in add_last_router(rev(generate_branches (Nat.sub nocsize 1))).
-
-Definition match_syn := (tLambda {| binder_name := nNamed "rl"%bs; binder_relevance := Relevant |}
-(tInd
- {|
-     inductive_mind :=
-       (MPdot (MPfile ["NOC_impl"%bs]) "NOCImpl"%bs,
-        "rule_name_t"%bs);
-     inductive_ind := 0
-   |} [])
-(tCase
-   {|
-     ci_ind :=
-       {|
-         inductive_mind :=
-           (MPdot (MPfile ["NOC_impl"%bs]) "NOCImpl"%bs,
-            "rule_name_t"%bs);
-         inductive_ind := 0
-       |};
-     ci_npar := 0;
-     ci_relevance := Relevant
-   |}
-   {|
-     puinst := [];
-     pparams := [];
-     pcontext :=
-       [{| binder_name := nNamed "rl"%bs; binder_relevance := Relevant |}];
-       preturn :=
-       tApp
-         (tInd
-            {|
-              inductive_mind := (MPfile ["Syntax"; "Koika"], "uaction");
-              inductive_ind := 0
-            |} [])
-         [tConst (MPfile ["Frontend"; "Koika"], "pos_t") [];
-          tConst (MPfile ["Frontend"; "Koika"], "var_t") [];
-          tConst (MPfile ["Frontend"; "Koika"], "fn_name_t") [];
-          tConst
-            (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "MyRegs",
-             "reg_t") [];
-          tConst
-            (MPdot (MPdot (MPfile ["NOC_impl"]) "NOCImpl") "MyRegs",
-             "ext_fn_t") []]
-   |} (tRel 0)
-     branch_body
-     )).
-
-Fixpoint generate_scheduler (n: nat) : term :=
-  match n with
-  | 0 => let sterm:= tApp
-  (tConstruct
-     {|
-       inductive_mind :=
-         (MPfile ["Syntax"%bs; "Koika"%bs], "scheduler"%bs);
-       inductive_ind := 0
-     |} 0 []) 
-  [tConst (MPfile ["Frontend"%bs; "Koika"%bs], "pos_t"%bs) [];
-  tInd
-    {|
-      inductive_mind :=
-        (MPdot (MPfile ["NOC_impl"%bs])
-           "NOCImpl"%bs, "rule_name_t"%bs);
-      inductive_ind := 0
-    |} []] in sterm
-    | S n' => let sterm:= tApp (tConstruct
-    {|
-      inductive_mind :=
-        (MPfile ["Syntax"%bs; "Koika"%bs], "scheduler"%bs);
-      inductive_ind := 0
-    |} 1 [])
-    [tConst (MPfile ["Frontend"%bs; "Koika"%bs], "pos_t"%bs) [];
-    tInd
-      {|
-        inductive_mind :=
-          (MPdot (MPfile ["NOC_impl"%bs])
-             "NOCImpl"%bs, "rule_name_t"%bs);
-        inductive_ind := 0
-      |} [];
-    tConstruct
-      {|
-        inductive_mind :=
-          (MPdot (MPfile ["NOC_impl"%bs])
-             "NOCImpl"%bs, "rule_name_t"%bs);
-        inductive_ind := 0
-      |} n' []; generate_scheduler n' ]
-      in sterm
-      end.
-
-Definition scheduler_synatx := Eval compute in (generate_scheduler nocsize).
-
-
-End NOCSyntax.
+Require Import NOCSyntax.
 
 Module MyTypes <: Typesize.
 Definition nocsize := 4.
@@ -310,7 +49,7 @@ Import NOC_type.   (*TODO Is there a way to avoid this additio*)
 
 
 
-Definition Sigma (fn: ext_fn_t) : ExternalSignature :=
+Definition Sigma' (fn: ext_fn_t) : ExternalSignature :=
   match fn with
   | _ => {$ bits_t sz ~> bits_t sz $}
   end.
@@ -347,10 +86,11 @@ MetaCoq Run ( tmMkDefinition "schedule"%bs scheduler_synatx).
 
 Definition external (r: rule_name_t) := false.
 
+
 Definition snocsize:= string_of_nat nocsize.
 Definition module_name:= String.to_string (String.append "NoC"%bs snocsize).
 Definition rules :=
-  tc_rules R Sigma to_action.
+  tc_rules R Sigma' to_action.
 
   Definition package :=
     {|
@@ -358,7 +98,7 @@ Definition rules :=
     {|
     koika_reg_types := R;
     koika_reg_init := r;
-    koika_ext_fn_types := Sigma;
+    koika_ext_fn_types := Sigma';
     koika_rules := rules;
     koika_rule_external := external;
     koika_scheduler := schedule;
@@ -426,7 +166,7 @@ Import NOCImpl.
     Proof.
       check.
     Defined. *)
-Definition sigdenote fn : Sig_denote (Sigma fn) :=
+Definition sigdenote fn : Sig_denote (Sigma' fn) :=
   match fn with
   | _ => fun x => x +b (Bits.of_nat 9 0)
   end.
@@ -442,7 +182,7 @@ Definition r_r2l (reg : reg_t) : R reg :=
 
 (* Definition schedule2 : scheduler :=
   router_1 |> router_2 |> done. *)
-Goal
+Lemma forward:
 run_schedule r_r2l rules sigdenote schedule
 (fun ctxt =>
 let r' := (fun idx => 
@@ -464,7 +204,8 @@ Bits.to_nat bits_r0 = 320)).
     check.
   Defined.
 
-
+Print forward.
+Compute eq_refl.
 
 (*8289 = 1 0000 0011 00001*)
 Definition r_l2r (reg : reg_t) : R reg :=
@@ -498,7 +239,7 @@ Bits.to_nat bits_r0 = 432)).
   Defined.
 
 
-Definition sigdenote2 fn : Sig_denote (Sigma fn) :=
+Definition sigdenote2 fn : Sig_denote (Sigma' fn) :=
   match fn with
   | extfn_1 => fun x => x +b (Bits.of_nat 9 304)
   | _ => fun x => x +b (Bits.of_nat 9 0)
@@ -564,7 +305,7 @@ Bits.to_nat bits_in = 304 )))). (*Check acknowledge register, check rightmost no
   Defined.
 
 (*Load right*)
-Definition sigdenote3 fn : Sig_denote (Sigma fn) :=
+Definition sigdenote3 fn : Sig_denote (Sigma' fn) :=
     match fn with
     | extfn_3 => fun x => x +b (Bits.of_nat 9 370)
     | _ => fun x => x +b (Bits.of_nat 9 0)
@@ -580,7 +321,7 @@ Definition sigdenote3 fn : Sig_denote (Sigma fn) :=
     Defined.
 
 (*Load left*)    
-Definition sigdenote4 fn : Sig_denote (Sigma fn) :=
+Definition sigdenote4 fn : Sig_denote (Sigma' fn) :=
     match fn with
     | extfn_3 => fun x => x +b (Bits.of_nat 9 322)
     | _ => fun x => x +b (Bits.of_nat 9 0)
@@ -594,5 +335,30 @@ Definition sigdenote4 fn : Sig_denote (Sigma fn) :=
     Proof.
     check.
     Defined.
-  
+
+Definition interfacesize := Nat.mul nocsize 2.
+Definition regno :=  Nat.add nocsize (Nat.sub nocsize 1).
+
+
+    (* MetaCoq Run (
+      tmMkInductive' (quoteind "reg_t" regprefix regno) ;;
+      tmMkInductive' (quoteind "rule_name_t" ruleprefix nocsize);;
+      tmMkInductive' (quoteind "ext_fn_t" extfnprefix interfacesize)
+  dt <- tmMkInductive (quote_ind "my_dt" n)
+  tmLemma "XYZ" (P dt).
+    )
+
+    MetaCoq Run (
+  tmMkInductive' (quoteind "reg_t" regprefix regno) ;;
+  tmMkInductive' (quoteind "rule_name_t" ruleprefix nocsize);;
+  tmMkInductive' (quoteind "ext_fn_t" extfnprefix interfacesize)
+). *)
+Lemma XYZ : 
+  forall nocsize,
+  let Sigma := 
+    InductiveDecl "name" (quoteind "reg_t" nocsize) ::
+    InductiveDecl "name" (quoteind "reg_t" nocsize) :: 
+    fst P_quoted 
+  in {t | Sigma ;;; [ ] |- t : tmApp <% P %> (quote_ind n) }.
+
 End Proofs.
