@@ -1,5 +1,5 @@
 Require Import MetaCoq.Template.All.
-
+From MetaCoq.Common Require Import config.
 Module Test.
 
 Import MCMonadNotation.
@@ -80,5 +80,19 @@ Definition universes := Monomorphic_ctx.
 
 Definition Sigma : global_env_ext := (Sigma_env, universes).
 
-Fail Lemma XYZ : 
-  {t | Sigma ;;; [ ] |- t : tApp <% P %> (snd nat_quoted::nil) }.
+Local Existing Instance default_checker_flags.
+
+
+Check tmUnquote.
+
+Lemma XYZ : 
+  {t & Sigma ;;; [ ] |- t : tApp P_quoted.2 (snd nat_quoted::nil) }.
+  Proof.
+  unfold P_quoted. 
+
+
+
+Lemma XYZ : 
+  {t & Sigma ;;; [ ] |- t : tApp <% P %> (snd nat_quoted::nil) }.
+  Proof.
+  Unset Printing Notations.
