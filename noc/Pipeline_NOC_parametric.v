@@ -368,14 +368,17 @@ Definition match_syn := (tLambda {| binder_name := nNamed "rl"%bs; binder_releva
      )).
 
 
-(*MetaCoq Test Quote (let rl := router_1 in
+MetaCoq Test Quote (let rl := router_1 in
 match rl with
 | router_1 => _routestart_r 0 (r_send r1) (r_receive r1)
 | router_2 => _routecenter_r 1 (r_send r1) (r_send r2) (r_receive r1) (r_receive r2)
 | router_3 => _routecenter_r 2 (r_send r2) (r_send r3) (r_receive r2) (r_receive r3)
 | router_4 => _routeend_r 3 (r_send r3) (r_receive r3)
-end).*)
+end).
 
+(* MetaCoq Quote Definition mytest:= rule_name_t.
+Print mytest.
+Locate rule_name_t. *)
  MetaCoq Run ( tmMkDefinition "to_action"%bs match_syn).  
 
 Definition R ( reg : reg_t ) :=
