@@ -14,7 +14,7 @@ Import String.
 Open Scope bs.
 
 (*nat2 AST*)
-Definition nat_inductive :=
+Definition nat_inductive (no_cstr :nat)  :=
   {|
   ind_finite := Finite;
   ind_npars := 0;
@@ -61,7 +61,25 @@ Definition nat_inductive :=
   ind_variance := None
 |}.
 
-MetaCoq Run (tmMkInductive' nat_inductive).
+Class Add (T:Type) := {
+  zero: T;
+  plus: T -> T -> T
+}.
+
+(* Instance AddNat : Add nat := {
+  zero := 0;
+  plus := Nat.add
+}. *)
+(* Lemma P1 (T:Type) (H: Add T) (n:T) : plus zero n = n. *)
+
+Axiom reify : mutual_inductive_body -> { T & Add T }.
+Definition P3 {T:Type} `{Add T} (T:Type) :=forall n: plus zero n = n .
+
+Lemma XYZ : forall (n:nat),
+  let my_nat := reify (nat_inductive n)
+  in P3 my_nat.
+
+MetaCoq Run (tmMkInductive' (nat_inductive 2)).
 
 Fixpoint plus2 (n : nat2) (m : nat2) : nat2 :=
   match n with
@@ -176,7 +194,17 @@ Class Add (T:Type) := {
   plus: T -> T -> T
 }.
 
-Lemma P1 (T:Type) (H: Add T) (n:T) : plus zero n = n.
+(* Lemma P1 (T:Type) (H: Add T) (n:T) : plus zero n = n. *)
+
+
+Definition P3 {T:Type} `{Add T} (n:T) : plus zero n = n.
+Admitted.
+
+Axiom reify ast: mutual_inductive_body.
+Lemma XYZ : forall (n:nat),
+  let my_nat := reify (nat_inductive n)
+  in P my_nat.
+Axiom reify
 
 
 
