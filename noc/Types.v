@@ -1,10 +1,17 @@
 Require Import Koika.Frontend.
 Require Import Koika.Std.
-Require Import Koika.Testing.
 
-Module Types.
+Module Type Typesize.
+Parameter nocsize : nat.
+Parameter data_sz : nat.
+End Typesize.
 
-Definition sz := 14.
+
+Module Types (TS:Typesize).
+Import TS.
+Definition addr_sz := log2 nocsize.
+Definition sz := Nat.add (Nat.add (Nat.mul 2 addr_sz) data_sz) 1.
+
 
 Definition basic_flit :=
     {|
@@ -12,10 +19,9 @@ Definition basic_flit :=
     struct_fields :=
       [
         ("new", bits_t 1);
-        ("src" , bits_t 4);
-        ("trg_y" , bits_t 2);
-        ("trg_x" , bits_t 2);
-        ("data" , bits_t 5)
+        ("src" , bits_t addr_sz);
+        ("dest" , bits_t addr_sz);
+        ("data" , bits_t data_sz)
       ]
     |}.
   
@@ -24,8 +30,7 @@ Definition router_address :=
     struct_name := "router_address";
     struct_fields :=
       [
-        ("y" , bits_t 2);
-        ("x" , bits_t 2)
+        ("raddr" , bits_t addr_sz)
       ]
     |}.
 

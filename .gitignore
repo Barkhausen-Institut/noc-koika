@@ -49,3 +49,6 @@ _build/*
 .cache
 .config
 .cloud-locale-test.skip
+.vscode
+# CoqPilot auxiliary files
+*_cp_aux.v
