@@ -1,7 +1,7 @@
 Require Import Koika.Frontend.
 Require Import Koika.Std.
 Require Import Koika.Testing.
-Require Import Types.
+Require Import noc.Types.
 
 
 Module Type Registers.

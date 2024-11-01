@@ -1,7 +1,7 @@
 Require Import Koika.Frontend.
 Require Import Koika.Std.
-Require Import Router.
-Require Import Types.
+Require Import noc.Router.
+Require Import noc.Types.
 From Coq Require Import Arith Lia Program.
 From Equations Require Import Equations.
 Require Import Coq.Vectors.Fin.
@@ -96,15 +96,8 @@ Proof.
   exact nocprop.
 Qed.
 
-Locate "<".
-Print lt.
-Locate "<=".
-Print le.
+(* Set Equations Debug. *)
 
-Set Equations Debug.
-
-Print le_S.
-Check (le_S 2 1).
 
 Notation "!" := (False_rect _ _).
 
@@ -137,37 +130,100 @@ Notation "!" := (False_rect _ _).
                                (reg_ regno (nat_to_fin  (Nat.add (Nat.pred n_idx) nocsize') _))
                                (ex_ interfacesize (nat_to_fin (Nat.mul n_idx 2) _ )) 
                                (ex_ interfacesize (nat_to_fin (S (Nat.mul n_idx 2)) _)). *)
-    
-Equations? to_action (rl : rule_name_t nocsize) :
- uaction (reg_t regno) (ext_fn_t interfacesize) :=
 
-   to_action rl with nocprop :=
-    to_action _rl (le_S ?(0) H) := { ! };
-    to_action _rl (le_S ?(1) (le_S ?(0) H)) := { ! }; 
-    to_action (rule_ noc_size' idx) ((S noc_size')) :=
-        let n_idx := fin_to_nat idx in
-        (* let interfacesize := Nat.mul nocsize' 2 in 
-        let regno := Nat.add (S nocsize') (Nat.sub (S nocsize') 1) in *)
+Check fin_to_nat.
+Print t.
+Print nat_to_fin.
+Print of_nat_lt.
+Equations to_action {n:nat} {H1:n=nocsize} (rl : rule_name_t nocsize) :
+  uaction (reg_t regno) (ext_fn_t interfacesize) :=
+
+  @to_action O pf _rl := ! ;
+  @to_action 1 pf _rl := ! ;
+  @to_action (S noc_size') _pf (rule_ noc_size' idx) with idx :=
+    @to_action (S noc_size') _pf (rule noc_size' idx) (F1 0) :=
+      routestartfn 0
+        (reg_ regno idx) (* travel *)
+        (reg_ regno (nat_to_fin (0 + nocsize) ((nocsize-1) + nocsize)) (* output *)
+        (ex_ interfacesize (nat_to_fin 0 (nocsize * 2))) (* external in *)
+        (ex_ interfacesize (nat_to_fin 1 (nocsize * 2))); (* external out *)
+
+  @to_action (S noc_size') _pf (rule noc_size' idx) (F1 nocsize') :=
+    routeendfn noc_size'
+      (reg_ regno (nat_to_fin (Nat.pred n_idx) _ ))
+      (reg_ regno (nat_to_fin  (Nat.add (Nat.pred n_idx) noc_size') _))
+      (ex_ interfacesize (nat_to_fin (Nat.mul n_idx 2) _ ))i
+      (ex_ interfacesize (nat_to_fin (S (Nat.mul n_idx 2)) _))
+
+  @to_action (S noc_size) _pf (rule noc_size' idx) (F1 (S n)) :=
+      routecenterfn n_idx
+        (reg_ regno (nat_to_fin (Nat.pred n_idx) _ ))
+        (reg_ regno (nat_to_fin  n_idx _))
+        (reg_ regno (nat_to_fin  (Nat.add (Nat.pred n_idx) noc_size') _))
+        (ex_ interfacesize (nat_to_fin (Nat.mul n_idx 2) _ ))
+        (ex_ interfacesize (nat_to_fin (S (Nat.mul n_idx 2)) _))
+    @to_action (S noc_size) pf (rule noc_size' idx) (FS s) := to_action (S nocsize) pf (rule noc_size' s)
+
+
+
+      let n_idx := fin_to_nat idx in
         if Nat.eqb n_idx 0 then
-                      routestartfn 0 
-                            (reg_ regno (nat_to_fin 0 _)) 
-                            (reg_ regno (nat_to_fin noc_size' _)) 
-                            (ex_ interfacesize (nat_to_fin 0 _)) 
-                            (ex_ interfacesize (nat_to_fin 1 _))
         else if Nat.eqb n_idx noc_size' then
-                      routeendfn noc_size'
-                            (reg_ regno (nat_to_fin (Nat.pred n_idx) _ ))
-                            (reg_ regno (nat_to_fin  (Nat.add (Nat.pred n_idx) noc_size') _))
-                            (ex_ interfacesize (nat_to_fin (Nat.mul n_idx 2) _ )) 
-                            (ex_ interfacesize (nat_to_fin (S (Nat.mul n_idx 2)) _))
         else
-                       routecenterfn n_idx 
-                            (reg_ regno (nat_to_fin (Nat.pred n_idx) _ ))
-                            (reg_ regno (nat_to_fin  n_idx _))
-                            (reg_ regno (nat_to_fin  (Nat.add (Nat.pred n_idx) noc_size') _))
-                            (ex_ interfacesize (nat_to_fin (Nat.mul n_idx 2) _ )) 
-                            (ex_ interfacesize (nat_to_fin (S (Nat.mul n_idx 2)) _)).
- - 
+.
+Next Obligation.
+  exfalso.
+  assert (bla : 1<nocsize). 1: { exact nocprop. }
+  rewrite <- pf in bla.
+  inversion bla.
+Qed.
+Next Obligation.
+  exfalso.
+  assert (bla : 1<nocsize). 1: { exact nocprop. }
+  rewrite <- pf in bla.
+  inversion bla.
+  inversion H0.
+Qed.
+Next Obligation. apply regno_gt_0. Qed.
+Next Obligation.
+  unfold regno.
+  rewrite <- _pf.
+  simpl.
+  rewrite <- Nat.succ_lt_mono.
+  rewrite -> plus_n_Sm.
+  apply Nat.lt_lt_add_l.
+  lia.
+Qed.
+Next Obligation. unfold interfacesize; lia. Qed.
+Next Obligation. unfold interfacesize; lia. Qed.
+Next Obligation.
+  unfold regno.
+  destruct nocsize.
+  - inversion _pf.
+  - inversion _pf.
+    subst. clear _pf.
+    induction idx eqn:E.
+    * unfold fin_to_nat; simpl; lia.
+    * specialize (IHt t eq_refl).
+      unfold fin_to_nat; fold (fin_to_nat t).
+      Search Nat.pred.
+  revert idx.
+  rewrite <- _pf.
+  intro idx.
+  dependent induction idx.
+  + unfold fin_to_nat.
+    simpl.
+    lia.
+  + unfold fin_to_nat.
+    simpl.
+    fold fin_to_nat.
+  dependent destruction idx.
+  - clear.
+  rewrite <- _pf in idx.
+  revert _pf.
+  destruct idx eqn:H.
+Obligations.
+ 
                             - apply regno_gt_0.
  - unfold regno. simpl.
 Qed.

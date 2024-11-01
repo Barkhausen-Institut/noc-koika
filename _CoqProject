@@ -1,1 +1,1 @@
--R _build/default/noc/ noc
+-Q _build/default/noc/ noc
