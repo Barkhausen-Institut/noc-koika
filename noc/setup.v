@@ -185,3 +185,19 @@ Inductive t : nat -> Set :=  F1 : forall n : nat, t (S n) | FS : forall n : nat,
 
 
 End Actions.
+
+
+Module Type Config.
+  Parameter x_dim:nat.
+End Config.
+
+Module FNoc
+  (a: Config)
+  (b: Typesize).
+  Module d := Actions b.
+  Import a d d.s.
+
+  Equations to_action (rl : s.rule_name_t (S x_dim)) : uaction (reg_t (S x_dim)) (ext_fn_t (S x_dim)) :=
+    to_action rl := @d.to_action x_dim rl x_dim (@le_n (S x_dim)).
+
+End FNoc.
