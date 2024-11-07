@@ -2,6 +2,7 @@ Require Import Koika.Frontend.
 Require Import Koika.Std.
 Require Import Koika.Testing.
 Require Import noc.Types.
+Require Import Koika.TypedParsing.
 
 
 Module Router
@@ -10,39 +11,44 @@ Module Router
   Module NOC_type := Types MyTypes.
   Import NOC_type.
 
+
   Section Funs.
 
     Context {reg_t : Type} {ext_fn_t : Type}.
 
-    Definition r_send (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
-      {{ fun r_send (value: bits_t sz) : unit_t =>
+    Check basic_flit.
+
+    Definition R ( reg : reg_t ) :=
+      match reg with
+        |  _ => bits_t (struct_sz basic_flit)
+      end.
+    
+    Definition Sigma (fn: ext_fn_t) : ExternalSignature :=
+      match fn with
+      | _ => {$ bits_t sz ~> bits_t sz $}
+      end.
+    
+    #[program] Definition r_send (reg_name: reg_t) : function R Sigma :=
+      <{ fun r_send (value: bits_t sz) : unit_t =>
            write0(reg_name, value)
-      }}.
+      }>.
+    
 
-    Definition r_receive (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
-      {{ fun r_receive () : bits_t sz =>
+    Definition r_receive (reg_name: reg_t) : function R Sigma :=
+      <{ fun r_receive () : bits_t sz =>
            read0(reg_name)
-      }}.
-
-    (* Definition r_send1 (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
-  {{ fun r_send1 (value: bits_t sz) : unit_t =>
-    write1(reg_name, value)
-  }}.
-
-Definition r_receive1 (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
-  {{ fun r_receive1 () : bits_t sz =>
-      read1(reg_name)
-  }}. *)
+      }>.
 
     Definition bz :=Bits.of_nat sz 0.
+    Print UBind.
 
     Definition _routestart_r
       (r_addr2: nat)
-      (r0_send r0_receive rtile_send: UInternalFunction reg_t ext_fn_t)
+      (r0_send r0_receive rtile_send: function R Sigma)
       (Tile_In Tile_Out : ext_fn_t)
-      : uaction reg_t ext_fn_t :=
+      : action R Sigma :=
       UBind "r_addr" (USugar (UConstBits (Bits.of_nat addr_sz r_addr2)))
-        {{
+        <{
             let m_input := (extcall Tile_In(#bz)) in
             let msg := unpack(struct_t basic_flit, m_input) in
             let new_data := get(msg, new) in
@@ -72,7 +78,7 @@ Definition r_receive1 (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
                     else
                       pass ))
             ))
-        }}.
+        }>.
 
     Definition _routeend_r
       (r_addr2: nat)
@@ -80,6 +86,7 @@ Definition r_receive1 (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
       (Tile_In Tile_Out : ext_fn_t)
       : uaction reg_t ext_fn_t :=
       UBind "r_addr" (USugar (UConstBits (Bits.of_nat addr_sz r_addr2)))
+        (UBind "zero" (USugar (UConstBits (Bits.of_nat addr_sz r_addr2)))
         {{
 
             let m_input := (extcall Tile_In(#bz)) in
@@ -106,7 +113,7 @@ Definition r_receive1 (reg_name: reg_t) : UInternalFunction reg_t ext_fn_t :=
                     else
                       pass ))
             ))
-        }}.
+        }}).
 
     (* Router needs to decide which packet will go first then send the packet*)
     Definition _routecenter_r
