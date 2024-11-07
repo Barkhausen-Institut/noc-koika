@@ -182,7 +182,7 @@ Inductive t : nat -> Set :=  F1 : forall n : nat, t (S n) | FS : forall n : nat,
 
     (* case: the types of the fin space match up  *)
     to_action (rule (S c) (FS c')) (x_dim_max:=?(S c)) H :=
-      to_action (rule c c') (le_t_inj H). 
+      to_action (rule c c') (le_t_inj H).
 
 Definition t0_3: Fin.t 3:= @F1 2.
 Definition t1_3: Fin.t 3:= @FS 2 (@F1 1).
@@ -190,36 +190,31 @@ Definition t2_3: Fin.t 3:= @FS 2 (@FS 1 (@F1 0)).
 
 Equations schedule {x_dim'} {x_dim_max : nat} (H: S x_dim' <<= S x_dim_max)
   : Syntax.scheduler pos_t (rule_name_t (S x_dim_max)) :=
- 
+
     (* rule 0 for max_dim 1 *)
     schedule (x_dim':= 0) (x_dim_max:= 0) (@le_n ?(S 0)) :=
       rule 0 (@F1 0) |> done;
 
     (* rule 0 for max_dim n *)
-    schedule (x_dim':=0) (x_dim_max:=(S m)) (@le_S (S (S x)) ?(S m) h) := 
+    schedule (x_dim':=0) (x_dim_max:=(S m)) (@le_S (S (S x)) ?(S m) h) :=
       rule (S m) (FS (widen_fin h (@F1 0))) |> done;
 
-    (* absurd --> TODO display *)
-    (* schedule (x_dim':=(S n)) (x_dim_max:=0) le_n := _; *)
     (* absurd *)
     schedule (x_dim':=(S n)) (x_dim_max:=0) (le_S x h) := absurd_le_t h;
-    (*absurd*)
-    (* schedule (x_dim':=0) (x_dim_max:=n) (@le_S 0 n h) := _;*)   (* last rule *)
 
-    (*schedule (x_dim':=(S n)) (x_dim_max:=(S n)) (@le_n (S n)) with schedule (le_t_inj (@le_n (S (S n)))) => {
-      schedule (x_dim':=(S n)) (x_dim_max:=(S n)) (@le_n (S n)) r :=
-        rule (S n) F1 |> r
+    schedule (x_dim':=(S n)) (x_dim_max:=(S n)) (@le_n ?(S n)) with
+      (schedule (x_dim':=n) (x_dim_max:=(S n)) (le_S (S n) (S n) (@le_n (S n)))) => {
+        schedule (x_dim':=(S n)) (x_dim_max:=(S n)) (@le_n ?(S n)) tl :=
+          rule (S n) (@F1 (S n)) |> tl
       };
-*)
-      schedule (x_dim':=n) (x_dim_max:=m) pf := _.
-    Next Obligation. inversion l. Qed.
-    Next Obligation. inversion pf. inversion H0. Qed.
-    Next Obligation. admit. Admitted. 
-    Next Obligation.
 
-    End Actions.
+    schedule (x_dim':=(S n)) (x_dim_max:=(S m)) (@le_S ?(S m) h) with
+      (schedule (x_dim':=n) (x_dim_max:=(S m)) (le_S (S n) (S m) (le_t_inj h))) => {
+      schedule (x_dim':=(S n)) (x_dim_max:=(S m)) (@le_S ?(S m) h) tl :=
+      rule (S m) (FS (widen_fin h (@F1 (S n)))) |> tl
+      }.
 
-Module Scheduler.
+End Actions.
 
 
 Module Type Config.
@@ -234,5 +229,8 @@ Module FNoc
 
   Equations to_action (rl : s.rule_name_t (S x_dim)) : uaction (reg_t (S x_dim)) (ext_fn_t (S x_dim)) :=
     to_action rl := @d.to_action x_dim rl x_dim (@le_n (S x_dim)).
+
+  Equations schedule : Syntax.scheduler pos_t (rule_name_t (S x_dim)) :=
+    schedule := @d.schedule x_dim x_dim (@le_n (S x_dim)).
 
 End FNoc.
