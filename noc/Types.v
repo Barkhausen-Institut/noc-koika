@@ -10,8 +10,6 @@ End Typesize.
 Module Types (TS:Typesize).
 Import TS.
 Definition addr_sz := log2 nocsize.
-Definition sz := Nat.add (Nat.add (Nat.mul 2 addr_sz) data_sz) 1.
-
 
 Definition basic_flit :=
     {|
@@ -34,5 +32,6 @@ Definition router_address :=
       ]
     |}.
 
+Definition sz := struct_sz basic_flit.
 
 End Types.

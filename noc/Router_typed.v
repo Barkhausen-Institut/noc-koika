@@ -28,7 +28,7 @@ Module Router
       | _ => {$ bits_t sz ~> bits_t sz $}
       end.
     
-      #[program] Definition r_send (reg_name: reg_t) : function R Sigma :=
+    Definition r_send (reg_name: reg_t) : function R Sigma :=
       <{ fun r_send (value: bits_t sz) : unit_t =>
            write0(reg_name, value)
       }>.
@@ -37,17 +37,16 @@ Module Router
       <{ fun r_receive () : bits_t sz =>
            read0(reg_name)
       }>.
-      Next Obligation.
-
+      
     Definition bz :=Bits.of_nat sz 0.
-    Print UBind.
+    Check Bind.
 
     #[program] Definition _routestart_r
       (r_addr2: nat)
       (r0_send r0_receive rtile_send: function R Sigma)
       (Tile_In Tile_Out : ext_fn_t)
       : action R Sigma :=
-      UBind "r_addr" (USugar (UConstBits (Bits.of_nat addr_sz r_addr2)))
+      (Bind "r_addr" (Const (tau := bits_t addr_sz )(Bits.of_nat addr_sz r_addr2))
         <{
             let m_input := (extcall Tile_In(#bz)) in
             let msg := unpack(struct_t basic_flit, m_input) in
@@ -78,16 +77,16 @@ Module Router
                     else
                       pass ))
             ))
-        }>.
+        }>). 
 
     Definition _routeend_r
       (r_addr2: nat)
-      (r0_send r0_receive rtile_send: UInternalFunction reg_t ext_fn_t)
+      (r0_send r0_receive rtile_send: function R Sigma)
       (Tile_In Tile_Out : ext_fn_t)
       : uaction reg_t ext_fn_t :=
       UBind "r_addr" (USugar (UConstBits (Bits.of_nat addr_sz r_addr2)))
         (UBind "zero" (USugar (UConstBits (Bits.of_nat addr_sz r_addr2)))
-        {{
+        <{
 
             let m_input := (extcall Tile_In(zero)) in
             let msg := unpack(struct_t basic_flit, m_input) in
@@ -113,7 +112,7 @@ Module Router
                     else
                       pass ))
             ))
-        }}).
+        }>).
 
     (* Router needs to decide which packet will go first then send the packet*)
     Definition _routecenter_r
