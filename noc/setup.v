@@ -1,10 +1,13 @@
 Require Import Koika.Frontend.
 Require Import Koika.Std.
+Require Import Koika.TypedParsing.
 Require Import noc.Router.
 Require Import noc.Types.
 From Coq Require Import Arith Lia Program.
 From Equations Require Import Equations.
 Require Import Coq.Vectors.Fin.
+From Coq Require Import ssreflect ssrfun ssrbool.
+Set Equations Transparent.
 
 
 Module Setup
@@ -184,10 +187,6 @@ Inductive t : nat -> Set :=  F1 : forall n : nat, t (S n) | FS : forall n : nat,
     to_action (rule (S c) (FS c')) (x_dim_max:=?(S c)) H :=
       to_action (rule c c') (le_t_inj H).
 
-Definition t0_3: Fin.t 3:= @F1 2.
-Definition t1_3: Fin.t 3:= @FS 2 (@F1 1).
-Definition t2_3: Fin.t 3:= @FS 2 (@FS 1 (@F1 0)).
-
 Equations schedule {x_dim'} {x_dim_max : nat} (H: S x_dim' <<= S x_dim_max)
   : Syntax.scheduler pos_t (rule_name_t (S x_dim_max)) :=
 
@@ -225,12 +224,48 @@ Module FNoc
   (a: Config)
   (b: Typesize).
   Module d := Actions b.
-  Import a d d.s.
-
+  Import a d d.s c.
   Equations to_action (rl : s.rule_name_t (S x_dim)) : uaction (reg_t (S x_dim)) (ext_fn_t (S x_dim)) :=
     to_action rl := @d.to_action x_dim rl x_dim (@le_n (S x_dim)).
 
   Equations schedule : Syntax.scheduler pos_t (rule_name_t (S x_dim)) :=
     schedule := @d.schedule x_dim x_dim (@le_n (S x_dim)).
+
+   Definition R ( reg : reg_t (S x_dim) ):=
+    match reg with
+      |  _ => bits_t (struct_sz basic_flit)
+    end.
+    
+  Definition Sigma (fn: ext_fn_t (S x_dim)) :=
+    match fn with
+    | _ => {$ bits_t sz ~> bits_t sz $}
+    end.
+
+ Fail Definition rules :=
+    tc_rules R Sigma to_action.
+
+
+  
+  Lemma xxx :
+    forall Sigma R rl,
+    { x | TypeInference.tc_action R Sigma dummy_pos (@List.nil (var_t * type)) unit_t
+    (desugar_action dummy_pos (to_action rl)) = Success x }.
+    Proof.
+
+    intros.
+    eexists.
+    destruct rl.
+    rewrite /to_action/d.to_action.
+
+    destruct rl.
+    - intros.
+      eexists.
+      rewrite /to_action/routestartfn/_routestart_r.
+      rewrite /desugar_action/desugar_action' -/desugar_action'.
+      rewrite /TypeInference.tc_action.
+      
+
+  (* Definition rules :=
+    tc_rules R Sigma to_action. *)
 
 End FNoc.
