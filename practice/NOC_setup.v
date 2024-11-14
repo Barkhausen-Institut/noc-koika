@@ -72,7 +72,6 @@ Fixpoint fin_to_nat {n : nat} (f : Fin.t n) : nat :=
   end.
 
 
-Search Fin.t.
 Compute Nat.pred nocsize.
 Compute Nat.mul 2 3.
 
@@ -101,16 +100,14 @@ Qed.
 
 Notation "!" := (False_rect _ _).
 
-
 (* 
-    Equations? to_action (nocsize:nat) (H: 2<=nocsize) (rl : rule_name_t nocsize) :
+
+    Equations to_action (nocsize:nat) (H: 2<=nocsize) (rl : rule_name_t nocsize) :
     uaction (reg_t regno ) (ext_fn_t interfacesize) :=
-        
-       to_action 1 (le_S nocsize H1) _ with H1 := {} ; 
-       to_action (S nocsize') H (rule_ nocsize' idx) :=
+       to_action O pf _rl := ! ;
+       to_action 1 pf _rl := ! ; 
+       to_action (S nocsize') _pf (rule_ nocsize' idx) :=
            let n_idx := fin_to_nat idx in
-           (* let interfacesize := Nat.mul nocsize' 2 in 
-           let regno := Nat.add (S nocsize') (Nat.sub (S nocsize') 1) in *)
            if Nat.eqb n_idx 0 then
                          routestartfn 0 
                                (reg_ regno (nat_to_fin 0 _)) 
@@ -129,47 +126,92 @@ Notation "!" := (False_rect _ _).
                                (reg_ regno (nat_to_fin  n_idx _))
                                (reg_ regno (nat_to_fin  (Nat.add (Nat.pred n_idx) nocsize') _))
                                (ex_ interfacesize (nat_to_fin (Nat.mul n_idx 2) _ )) 
-                               (ex_ interfacesize (nat_to_fin (S (Nat.mul n_idx 2)) _)). *)
+                               (ex_ interfacesize (nat_to_fin (S (Nat.mul n_idx 2)) _)).
+                               Next Obligation.
+                               exfalso.
+                               assert (bla : 1<nocsize). 1: { exact nocprop. }
+                               rewrite <- pf in bla.
+                               inversion bla.
+                             Qed.
+                             Next Obligation.
+                               exfalso.
+                               assert (bla : 1<nocsize). 1: { exact nocprop. }
+                               rewrite <- pf in bla.
+                               inversion bla.
+                               inversion H0.
+                             Qed.
+                             Next Obligation. apply regno_gt_0. Qed.
+                             Next Obligation.
+                               unfold regno.
+                               rewrite <- _pf.
+                               simpl.
+                               rewrite <- Nat.succ_lt_mono.
+                               rewrite -> plus_n_Sm.
+                               apply Nat.lt_lt_add_l.
+                               lia.
+                             Qed.
+                             Next Obligation. unfold interfacesize; lia. Qed.
+                             Next Obligation. unfold interfacesize; lia. Qed.
+                             Next Obligation.
+                               unfold regno.
+                               destruct nocsize.
+                               - inversion _pf.
+                               - inversion _pf.
+                                 subst. clear _pf.
+                                 induction idx eqn:E.
+                                 * unfold fin_to_nat; simpl; lia.
+                                 * specialize (IHt t eq_refl).
+                                   unfold fin_to_nat; fold (fin_to_nat t).
+                                   Search Nat.pred.
+                               revert idx.
+                               rewrite <- _pf.
+                               intro idx.
+                               dependent induction idx.
+                               + unfold fin_to_nat.
+                                 simpl.
+                                 lia.
+                               + unfold fin_to_nat.
+                                 simpl.
+                                 fold fin_to_nat.
+                               dependent destruction idx.
+                               - clear.
+                               rewrite <- _pf in idx.
+                               revert _pf.
+                               destruct idx eqn:H. *)
 
 Check fin_to_nat.
 Print t.
 Print nat_to_fin.
 Print of_nat_lt.
+
+
 Equations to_action {n:nat} {H1:n=nocsize} (rl : rule_name_t nocsize) :
   uaction (reg_t regno) (ext_fn_t interfacesize) :=
 
   @to_action O pf _rl := ! ;
   @to_action 1 pf _rl := ! ;
   @to_action (S noc_size') _pf (rule_ noc_size' idx) with idx :=
-    @to_action (S noc_size') _pf (rule noc_size' idx) (F1 0) :=
+    @to_action (S noc_size') _pf (rule_ noc_size' idx) (@F1 0) :=
       routestartfn 0
         (reg_ regno idx) (* travel *)
-        (reg_ regno (nat_to_fin (0 + nocsize) ((nocsize-1) + nocsize)) (* output *)
+        (reg_ regno (nat_to_fin (0 + nocsize) ((nocsize-1) + nocsize))) (* output *)
         (ex_ interfacesize (nat_to_fin 0 (nocsize * 2))) (* external in *)
         (ex_ interfacesize (nat_to_fin 1 (nocsize * 2))); (* external out *)
 
-  @to_action (S noc_size') _pf (rule noc_size' idx) (F1 nocsize') :=
+  @to_action (S noc_size') _pf (rule_ noc_size' idx) (@F1 nocsize') :=
     routeendfn noc_size'
       (reg_ regno (nat_to_fin (Nat.pred n_idx) _ ))
       (reg_ regno (nat_to_fin  (Nat.add (Nat.pred n_idx) noc_size') _))
       (ex_ interfacesize (nat_to_fin (Nat.mul n_idx 2) _ ))i
-      (ex_ interfacesize (nat_to_fin (S (Nat.mul n_idx 2)) _))
+      (ex_ interfacesize (nat_to_fin (S (Nat.mul n_idx 2)) _));
 
-  @to_action (S noc_size) _pf (rule noc_size' idx) (F1 (S n)) :=
+  @to_action (S noc_size) _pf (rule_ noc_size' idx) (@F1 (S n)) :=
       routecenterfn n_idx
         (reg_ regno (nat_to_fin (Nat.pred n_idx) _ ))
         (reg_ regno (nat_to_fin  n_idx _))
         (reg_ regno (nat_to_fin  (Nat.add (Nat.pred n_idx) noc_size') _))
         (ex_ interfacesize (nat_to_fin (Nat.mul n_idx 2) _ ))
-        (ex_ interfacesize (nat_to_fin (S (Nat.mul n_idx 2)) _))
-    @to_action (S noc_size) pf (rule noc_size' idx) (FS s) := to_action (S nocsize) pf (rule noc_size' s)
-
-
-
-      let n_idx := fin_to_nat idx in
-        if Nat.eqb n_idx 0 then
-        else if Nat.eqb n_idx noc_size' then
-        else
+        (ex_ interfacesize (nat_to_fin (S (Nat.mul n_idx 2)) _)).
 .
 Next Obligation.
   exfalso.
@@ -437,9 +479,9 @@ Check rule_fn.
 Definition to_action (rl: rule_name_t nocsize) := 
 match rl with
 | (rule_fn nocsize 0) => routestartfn 0 reg_fn regno 0 reg_fn regno 1 extfn interfacesize 0 extfn interfacesize 1
-| rule_ => routecenterfn 1 r1 r2 r5 extfn_3 extfn_4
-| rule_ => routecenterfn 2 r2 r3 r6 extfn_5 extfn_6
-| rule_ => routeendfn 3 r3 r7 extfn_7 extfn_8
+| (rule_fn nocsize 0) => routecenterfn 1 r1 r2 r5 extfn_3 extfn_4
+| (rule_fn nocsize 0) => routecenterfn 2 r2 r3 r6 extfn_5 extfn_6
+| (rule_fn nocsize 0) => routeendfn 3 r3 r7 extfn_7 extfn_8
 end.
 
 

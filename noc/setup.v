@@ -1,7 +1,6 @@
 Require Import Koika.Frontend.
 Require Import Koika.Std.
-Require Import Koika.TypedParsing.
-Require Import noc.Router.
+Require Import noc.Router. 
 Require Import noc.Types.
 From Coq Require Import Arith Lia Program.
 From Equations Require Import Equations.
@@ -241,8 +240,8 @@ Module FNoc
     | _ => {$ bits_t sz ~> bits_t sz $}
     end.
 
- Fail Definition rules :=
-    tc_rules R Sigma to_action.
+  Equations rules : rule_name_t (S x_dim) -> action R empty_Sigma [] unit_t :=
+    rules := tc_rules R Sigma to_action.
 
 
   

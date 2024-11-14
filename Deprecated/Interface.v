@@ -1,6 +1,6 @@
 Require Import Koika.Frontend.
 Require Import Koika.Std.
-Require Import Types.
+Require Import noc.Types.
 
 
 Module Interface.

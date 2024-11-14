@@ -115,17 +115,16 @@ Module Router
                       pass ))
             ))
         }>)).
-
-    (* Router needs to decide which packet will go first then send the packet*)
-    #[program] Definition _routecenter_r
+        
+    Definition _routecenter_r
       (r_addr2: nat)
-      (r0_send: function R Sigma (tau:=unit_t) (sig:=[("arg1", bits_t sz)]))  
-      (r1_send: function R Sigma (tau:=unit_t) (sig:=[("arg1", bits_t sz)]))  
+      (r0_send: function R Sigma (tau:=unit_t) (sig:=[("value", bits_t sz)]))  
+      (r1_send: function R Sigma (tau:=unit_t) (sig:=[("value", bits_t sz)]))  
       (r0_receive: function R Sigma (tau:=bits_t sz))
       (r1_receive: function R Sigma (tau:=bits_t sz))
-      (rtile_send: function R Sigma (tau:=unit_t) (sig:=[("arg1", bits_t sz)]))
+      (rtile_send: function R Sigma (tau:=unit_t) (sig:=[("value", bits_t sz)]))
       (Tile_In Tile_Out : ext_fn_t)
-      : action R Sigma :=
+      : action R Sigma  :=
       (Bind "r_addr" (Const (tau := bits_t addr_sz )(Bits.of_nat addr_sz r_addr2))
       ((Bind "zero" (Const (tau := bits_t sz )(Bits.of_nat sz 0)))
         <{
@@ -134,17 +133,17 @@ Module Router
             let new_data := get@basic_flit(msg, new) in
             let dest := get@basic_flit(msg,dest) in
             let src_p := get@basic_flit(msg, src) in
-            (( if (new_data && src_p == r_addr && dest>r_addr) then
+            if (new_data && src_p == r_addr && dest>r_addr) then
                  r1_send(m_input)
-               (* else if (new_data && src_p == r_addr && dest<r_addr) then
-                      r0_send(m_input) *)
+               else if (new_data && src_p == r_addr && dest<r_addr) then
+                      r0_send(m_input)
                     else 
                       let m0 := r0_receive() in (*router input policy will be added here*)
                       let m1 := r1_receive() in 
                       let msg := unpack(struct_t basic_flit, m0) in
                       let new_data := get@basic_flit(msg, new) in
                       let src_p := get@basic_flit(msg, src) in
-                      (( if (src_p != r_addr && new_data) then
+                       (if (src_p != r_addr && new_data) then
                            r0_send(pack(subst(msg, new, Ob~0)));
                            let dest := get@basic_flit(msg, dest) in
                            (*r_addr[|2`d0| :+ 2] if not using struct*)
@@ -156,13 +155,11 @@ Module Router
                                   rtile_send(extcall Tile_Out(m0))
                                             (* r0_send(pack(subst(msg, new, |1`d0|)))  *)
                                             (* To stop the packet from being processed again*)
-                         else
-                           pass ));
-
+                    );
                let msg := unpack(struct_t basic_flit, m1) in
                let new_data := get@basic_flit(msg, new) in
                let src_p := get@basic_flit(msg, src) in
-               (( if (src_p != r_addr && new_data) then
+               ( if (src_p != r_addr && new_data) then
                     r1_send(pack(subst(msg, new, Ob~0)));
                     let dest := get@basic_flit(msg, dest) in
                     (*r_addr[|2`d0| :+ 2] if not using struct*)
@@ -174,10 +171,10 @@ Module Router
                            rtile_send(extcall Tile_Out(m1))
                                      (* r1_send(pack(subst(msg, new, |1`d0|)))  *)
                                      (* To stop the packet from being processed again*)
-                  else
-                    pass ))
-            ))
+                                     );
+            
         }>)).
+        Next Obligation.
 
 
     Definition routestartfn (n:nat) (r1 r_ack: reg_t) (e1 e2: ext_fn_t): action R Sigma :=
@@ -186,7 +183,7 @@ Module Router
     Definition routeendfn (n:nat) (r1 r_ack: reg_t) (e1 e2: ext_fn_t): action R Sigma :=
       _routeend_r n (r_send r1) (r_receive r1) (r_send r_ack) e1 e2.
 
-    Definition routeendfn (n:nat) (r1 r_ack: reg_t) (e1 e2: ext_fn_t): uaction reg_t ext_fn_t :=
+    Definition routeendfn (n:nat) (r1 r_ack: reg_t) (e1 e2: ext_fn_t): action R Sigma :=
       _routeend_r n (r_send r1) (r_receive r1) (r_send r_ack) e1 e2.
 
   End Funs.

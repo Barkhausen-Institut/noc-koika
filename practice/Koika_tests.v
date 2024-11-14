@@ -6,8 +6,8 @@ Module KoikaTests.
 
 Parameter regno:nat.
 
-Inductive reg_t := reg_ (n: Vect.index regno).
 
+Inductive reg_t := reg_ (n: Vect.index regno).
  Definition reg0:= reg_ thisone.
 
 Inductive reg_t2 (regno: nat) : Type :=

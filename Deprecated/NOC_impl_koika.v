@@ -178,8 +178,8 @@ Section TIHelp.
 Context {rule_name_t reg_t ext_fn_t: Type}.
   (* Context {var_t_eq_dec: EqDec var_t}. *)
 
-  Context (R: reg_t -> type).
-  Context (Sigma: ext_fn_t -> ExternalSignature).
+Context (R: reg_t -> type).
+Context (Sigma: ext_fn_t -> ExternalSignature).
 
   Notation EX Px := (existT _ _ Px).
   Locate uaction.
