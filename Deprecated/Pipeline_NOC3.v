@@ -90,7 +90,7 @@ Definition _routecenter_r (r_addr2: bits_t 4) (r0_send r1_send r0_receive r1_rec
   let new_data := get(msg, new) in
   let src_p := get(msg, src) in
   (( if (src_p != r_addr && new_data) then
-      r0_send(pack(subst(msg, new, Ob~0)));
+      r0_send(substbits(basic_flit ,m0, new, Ob~0));
       let trg_x := get(msg, trg_x) in
       let trg_y := get(msg, trg_y) in
       let src_x := get(unpack(struct_t router_address, r_addr), x) in
@@ -108,7 +108,7 @@ Definition _routecenter_r (r_addr2: bits_t 4) (r0_send r1_send r0_receive r1_rec
   let new_data := get(msg1, new) in
   let src_p := get(msg1, src) in
   (( if (src_p != r_addr && new_data) then
-      r1_send(pack(subst(msg1, new, Ob~0)));
+      r1_send(substbits(basic_flit ,m1, new, Ob~0));
       let trg_x := get(msg1, trg_x) in
       let trg_y := get(msg1, trg_y) in
       let src_x := get(unpack(struct_t router_address, r_addr), x) in
@@ -162,7 +162,7 @@ Definition to_action rl :=
   | route3_r => _routeend_r Ob~0~0~1~1 (r_send r2) (r_receive r2)
   end.
 
- Print to_action. 
+ (* Print to_action.  *)
 Definition R ( reg : reg_t ) :=
   match reg with
   |  r0 => bits_t (struct_sz basic_flit)
