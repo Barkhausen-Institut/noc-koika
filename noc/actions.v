@@ -162,24 +162,17 @@ Equations schedule {x_dim'} {x_dim_max : nat} (H: S x_dim' <<= S x_dim_max)
 
 End Actions.
 
-
-Module Type Config.
-  Parameter x_dim:nat.
-End Config.
-
 Module FNoc
-  (a: Config)
   (b: Typesize).
 
   Module d := Actions b.
-  Print d.Routerfns.NOC_setup.
   Import d d.Routerfns d.Routerfns.NOC_setup.
 
-  Equations to_action (rl : rule_name_t (S a.x_dim)) : 
-    action (tau:= unit_t) (R (x_dim:=a.x_dim)) (Sigma (x_dim:=a.x_dim)) :=
-    to_action rl := @d.to_action a.x_dim rl a.x_dim (@le_n (S a.x_dim)).
+  Equations to_action (rl : rule_name_t (S b.nocsize)) : 
+    action (tau:= unit_t) (R (x_dim:=b.nocsize)) (Sigma (x_dim:=b.nocsize)) :=
+    to_action rl := @d.to_action b.nocsize rl b.nocsize (@le_n (S b.nocsize)).
 
-  Equations schedule : Syntax.scheduler pos_t (rule_name_t (S a.x_dim)) :=
-    schedule := @d.schedule a.x_dim a.x_dim (@le_n (S a.x_dim)).
+  Equations schedule : Syntax.scheduler pos_t (rule_name_t (S b.nocsize)) :=
+    schedule := @d.schedule b.nocsize b.nocsize (@le_n (S b.nocsize)).
 
 End FNoc.
