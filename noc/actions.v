@@ -172,7 +172,6 @@ Module FNoc
   (b: Typesize).
 
   Module d := Actions b.
-  Print d.Routerfns.NOC_setup.
   Import d d.Routerfns d.Routerfns.NOC_setup.
 
   Equations to_action (rl : rule_name_t (S a.x_dim)) : 
