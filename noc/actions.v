@@ -14,9 +14,9 @@ Module Actions
   (* (a : Config) *)
   (b : Typesize).
 
-  Module s := Setup b.
-  Module Routerfns:= Router b.
-  Import s s.c Routerfns.
+  (* Module s := Setup b. *)
+  Module Routerfns := Router b.
+  Import Routerfns Routerfns.NOC_setup.
 
   Equations absurd_fin {T} (x:Fin.t 0) : T := .
 
@@ -81,7 +81,7 @@ Inductive t : nat -> Set :=  F1 : forall n : nat, t (S n) | FS : forall n : nat,
       }.
 
   Equations to_action {x_dim'} (rl : rule_name_t (S x_dim')) {x_dim_max : nat} (H: S x_dim' <<= S x_dim_max)
-    : action R Sigma := (* Q: why S x_dim_max*)
+    : action (tau:= unit_t) (R (x_dim:=x_dim_max)) (Sigma (x_dim:=x_dim_max)) := (* Q: why S x_dim_max (tau:= unit_t)*)
 
     (* case: single router *)
     to_action (rule 0 (@F1 ?(0))) le_n :=
@@ -170,12 +170,16 @@ End Config.
 Module FNoc
   (a: Config)
   (b: Typesize).
-  Module d := Actions b.
-  Import a d d.s c.
-  Equations to_action (rl : s.rule_name_t (S x_dim)) : uaction (reg_t (S x_dim)) (ext_fn_t (S x_dim)) :=
-    to_action rl := @d.to_action x_dim rl x_dim (@le_n (S x_dim)).
 
-  Equations schedule : Syntax.scheduler pos_t (rule_name_t (S x_dim)) :=
-    schedule := @d.schedule x_dim x_dim (@le_n (S x_dim)).
+  Module d := Actions b.
+  Print d.Routerfns.NOC_setup.
+  Import d d.Routerfns d.Routerfns.NOC_setup.
+
+  Equations to_action (rl : rule_name_t (S a.x_dim)) : 
+    action (tau:= unit_t) (R (x_dim:=a.x_dim)) (Sigma (x_dim:=a.x_dim)) :=
+    to_action rl := @d.to_action a.x_dim rl a.x_dim (@le_n (S a.x_dim)).
+
+  Equations schedule : Syntax.scheduler pos_t (rule_name_t (S a.x_dim)) :=
+    schedule := @d.schedule a.x_dim a.x_dim (@le_n (S a.x_dim)).
 
 End FNoc.
