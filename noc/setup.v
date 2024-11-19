@@ -2,13 +2,14 @@ Require Import Koika.Frontend.
 Require Import Koika.Std.
 Require Import Koika.TypedParsing.
 Require Import noc.Types.
+Require Import noc.helpers.
 Require Import Coq.Vectors.Fin.
 
 Module Setup
   (b : Typesize).
 
   Module c := Types b.
-  Import c.
+  Import c Helpers.
 
   (** Router state
 
@@ -56,6 +57,35 @@ Module Setup
   Inductive rule_name_t : nat -> Type :=
   | rule : forall x_dim, Fin.t (S x_dim) -> rule_name_t (S x_dim).
 
+
+  Module Instances.
+
+    Definition fin_idx n (r: (reg_t (S n))) : nat :=
+      match r with
+      | router _ n state      => 2 * proj1_sig (Fin.to_nat n)
+      | router _ n downstream => 2 * proj1_sig (Fin.to_nat n) + 1
+      end.
+
+    Fixpoint fin_elems n : list (reg_t (S n)) :=
+      match n with
+      | 0 => cons (router 0 F1 state)
+             cons (router 0 F1 downstream) 
+             nil
+      | S n => cons (router n (widen_fin (@F1 n)) state)
+               cons (router n F1 downstream) 
+               fin_elems n
+      end. 
+
+
+
+Instance Fin_regt : forall n, FiniteType (reg_t (S n)) :=
+{ 
+  finite_index := fin_idx;
+  finite_elements := fin_elems;
+  finite_surjective: forall a: T, List.nth_error finite_elements (finite_index a) = Some a;
+  finite_injective: NoDup (List.map finite_index finite_elements) 
+}
+
+  End Instances.
+
 End Setup.
-
-
