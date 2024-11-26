@@ -6,8 +6,7 @@ Require Import noc.helpers.
 Require Import Coq.Vectors.Fin.
 
 From Equations Require Import Equations.
-Set Equations Transparent.
-
+(* Set Equations Transparent. *)
 
 Module Setup.
 
@@ -64,6 +63,9 @@ Module Instances.
 
   Import Setup Helpers.
 
+  Derive Signature for reg_t.
+  Derive NoConfusion for reg_t.
+
   Equations fin_idx {n} (r: (reg_t (S n))) : nat :=
     fin_idx (router _ n' state)      := 2 * proj1_sig (Fin.to_nat n');
     fin_idx (router _ n' downstream) := 2 * proj1_sig (Fin.to_nat n') + 1.
@@ -93,11 +95,10 @@ Module Instances.
       let f1 := FS (widen_fin (widen_fin_left0 H') (@F1 0)) in
       [router (S (S m')) f1 state; router (S (S m')) f1 downstream];
 
-    fin_elems' (S n') (S m') H' :=
-      let f1 := widen_fin (widen_le_t_S H') (@F1 (S n')) in
-      cons (router (S m') f1 state)
-        (cons (router (S m') f1 downstream)
-          (fin_elems' n' (S m') (le_t_inj H'))).
+    fin_elems' (S n') (S m') H' with fin_elems' n' (S m') (le_t_inj H') :=
+      | tl := let f1 := widen_fin (widen_le_t_S H') (@F1 (S n')) in
+              cons (router (S m') f1 state)
+                (cons (router (S m') f1 downstream) tl).
 
 
   Definition fin_elems {n} : list (reg_t (S n)) :=
@@ -108,11 +109,56 @@ Module Instances.
       List.nth_error fin_elems (fin_idx a) = Some a.
   Proof.
     intros n r.
-    depelim r.
-    destruct n; destruct r.
-    - destruct t.
+    unfold fin_elems.
+    funelim (fin_elems' n n (le_n n)).
+    - simp fin_elems'.
+      depelim r.
+      depelim t; try inversion t.
+      funelim (fin_idx (router 0 F1 r));
+      rewrite <- Heqcall;
+      depelim n'; simpl; inversion H; rewrite H1; reflexivity.
+    - simp fin_elems'.
+      cbv zeta.
+      (* rewrite <- H0; rewrite <- H1; clear H0 H1. *)
+      (* simp widen_le_t_S. *)
+      depelim r.
+      depelim t.
+      + funelim (fin_idx (router (S n') F1 r));
+        inversion H; clear H;
+        simp fin_idx; simpl; reflexivity.
+      + specialize (Hind (S n') (router (S n') (FS t) r)).
+        simp le_t_inj in Hind.
+        revert Hind.
+        funelim (fin_idx (router (S n') (FS t) r)).
+        * inversion H; clear H;
+          simp fin_idx; simpl.
 
-  
+          rewrite Nat.add_0_r.
+          assert (n'_eq_fs_t := inj_right_pair H1).
+          (* rewrite <- n'_eq_fs_t. *)
+          simpl.
+          destruct (to_nat t).
+          simpl proj1_sig.
+
+          simpl.
+          rewrite <- plus_n_Sm.
+          simpl.
+          simp fin_elems'.
+          cbv zeta.
+          simpl.
+          simp widen_le_t_S.
+          intro Hind.
+          apply Hind.
+
+          specialize (H eq_refl).
+          apply H.
+          specialize (H (S n'0) (router (S n'0) n' state)).
+          simp le_t_inj in H.
+
+          clear H2.
+          apply H.
+          rewrite n'_eq_fs_t in H.
+          rewrite <- Heqcall in H.
 
   Instance Fin_regt : forall n, FiniteType (reg_t (S n)) :=
   {

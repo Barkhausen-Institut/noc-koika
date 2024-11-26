@@ -19,8 +19,8 @@ Module Helpers.
   Equations widen_fin {n n'} (H: n<=n') (x : Fin.t n) : Fin.t n' :=
     widen_fin (n:=0)   (n':=0)   _H          x := x;
     widen_fin (n:=S a) (n':=S a) (le_n a)    x := x;
-    widen_fin (n:=0)   (n':=S a) _H  x := absurd_fin x; (* absurd *)
-    widen_fin (n:=S a) (n':=0)   H           x := _; (* absurd *)
+    widen_fin (n:=0)   (n':=S a) _H          x := absurd_fin x;
+    widen_fin (n:=S a) (n':=0)   H           x := absurd_le_t H;
     widen_fin (n:=S a) (n':=S b) (le_S b H1) x with widen_fin H1 x => {
         widen_fin (n:=S a) (n':=S b) (le_S b H2) _x y := FS y
       }.
@@ -46,12 +46,11 @@ Module Helpers.
   Equations widen_fin {n n'} (H: n<<=n') (x : Fin.t n) : Fin.t n' :=
     widen_fin (n:=0)   (n':=0)   _H          x := x;
     widen_fin (n:=S a) (n':=S a) (le_n a)    x := x;
-    widen_fin (n:=0)   (n':=S a) _H  x := absurd_fin x; (* absurd *)
-    widen_fin (n:=S a) (n':=0)   H           x := _; (* absurd *)
+    widen_fin (n:=0)   (n':=S a) _H          x := absurd_fin x;
+    widen_fin (n:=S a) (n':=0)   H           x := absurd_le_t H;
     widen_fin (n:=S a) (n':=S b) (le_S b H1) x with widen_fin H1 x => {
         widen_fin (n:=S a) (n':=S b) (le_S b H2) _x y := FS y
       }.
-  Next Obligation. inversion H. Qed.
 
   (* A much nicer definition of [widen_fin] can be found here:
      https://github.com/mattam82/Coq-Equations/blob/ded4baada11f9434333e53d9eb3c21ded33e67ad/examples/Fin.v#L58
