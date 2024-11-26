@@ -117,27 +117,39 @@ Module Instances.
                    (lift tl))
         }.
   
-  Lemma help: forall n m',
-    List.nth_error (fin_elems'' m') n = Some (router m' F1 state) ->
-    List.nth_error (lift (fin_elems'' m')) n = Some (router (S m') F1 state).
-  Admitted.
+  Lemma lift_nth: forall n m f s (l : list (reg_t (S m))),
+    List.nth_error l n = Some (router m f s) ->
+    List.nth_error (lift l) n = Some (router (S m) (FS f) s).
+  Proof.
+   intros n m f s l H.
+   funelim (lift _).
+   - simp lift. destruct n; depelim H.
+   - simpl in *; simp lift.
+     destruct n.
+     + simpl in *.
+       inversion H.
+       assert (f_eq_F1 := inj_right_pair H2).
+       subst.
+       exact eq_refl.
+     + simpl in *.
+       exact (Hind n f0 s0 H).
+  Qed.
 
-    Lemma regt_error :
-    forall n, forall (r: (reg_t (S n))),
+  Lemma regt_error :
+    forall n (r: (reg_t (S n))),
       List.nth_error (fin_elems'' n) (fin_idx r) = Some r.
   Proof.
   intros n r.
   funelim (fin_elems'' n).
-  - funelim (fin_idx r). simp fin_idx; simpl; try (reflexivity || depelim f).
+  - funelim (fin_idx r); simp fin_idx; simpl; try (reflexivity || depelim t0).
   - funelim (fin_idx r); simp fin_idx; simpl; rewrite <- plus_n_O.
-    + Search (_ + S _).
-      rewrite <- plus_n_Sm.
+    + rewrite <- plus_n_Sm.
       simpl.
-      specialize (Hind (mk m' F1 A)).
+      specialize (Hind (router m' F1 state)).
       simp fin_idx in Hind.
       simpl in Hind.
       rewrite <- plus_n_O in Hind.
-
+      apply lift_nth.
   
 
   Instance Fin_regt : forall n, FiniteType (reg_t (S n)) :=
