@@ -204,31 +204,32 @@ Module Instances.
     induction n; simp fin_elems''; simp fint_idx; try reflexivity.
     - do 2 rewrite map_cons.
       rewrite map_map.
-      Check map_ext.
       erewrite map_ext.
       2:{
-        clear IHn.
         intros a.
-        depelim a. simp lift_router. simp fint_idx.
-        instantiate (1:= fun x => S (S (fint_idx g))).
-
-        exact eq_refl. reflexivity.
-        funelim (lift_router n t r). depelim t.
-        simp lift_router.
+        depelim a; simp lift_router; simp fint_idx.
+        instantiate (1:= fun x => S (S (fint_idx x))).
+        cbn beta.
+        exact eq_refl.
       }
-      Search map.
-      funelim (lift_router x).  rewrite <- map_map. unfold lift_router.
+      rewrite <- map_map.
+      rewrite <- (map_map _ S fin_elems'').
       rewrite IHn.
-      unfold map. fold map.
-      unfold map in IHn.
-      rewrite IHn.
+      cbn.
+      repeat f_equal.
+      repeat rewrite seq_shift.
+      reflexivity.
+    - rewrite is_seq. apply seq_NoDup.
+  Qed.
+
+  About Build_FiniteType.
 
   Instance Fin_regt {n} : FiniteType (reg_t (S n)) :=
-  {
-    finite_index := fin_idx;
-    finite_elements := fin_elems;
-    finite_surjective: regt_eror;
-    finite_injective: NoDup (List.map finite_index finite_elements)
-  }
+    Build_FiniteType
+      (reg_t (S n))
+      fint_idx
+      fin_elems''
+      regt_error
+      regt_injective.
 
 End Instances.
