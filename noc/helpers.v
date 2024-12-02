@@ -9,28 +9,6 @@ Module Helpers.
 
   Derive NoConfusion for nat.
   Derive Signature NoConfusion for Fin.t.
-  Derive Signature for le.
-
-  (* Equations cannot recurse on [Prop]. *)
-  Fail Derive NoConfusion for le.
-
-  (* Set Equations Debug. *)
-
-  Equations widen_fin {n n'} (H: n<=n') (x : Fin.t n) : Fin.t n' :=
-    widen_fin (n:=0)   (n':=0)   _H          x := x;
-    widen_fin (n:=S a) (n':=S a) (le_n a)    x := x;
-    widen_fin (n:=0)   (n':=S a) _H          x := absurd_fin x;
-    widen_fin (n:=S a) (n':=0)   H           x := absurd_le_t H;
-    widen_fin (n:=S a) (n':=S b) (le_S b H1) x with widen_fin H1 x => {
-        widen_fin (n:=S a) (n':=S b) (le_S b H2) _x y := FS y
-      }.
-  Next Obligation. lia.
-                   Fail Qed.
-  (* Use [Set Equations Debug] to see more.
-     The problem is that Equations cannot recurse into [Prop] because
-     then the function become undefinable/extractable.
-   *)
-  Abort.
 
   (* We recover from this situation by redefining [le] in [Type]. *)
   Reserved Notation "a <<= b" (at level 99).
@@ -65,5 +43,17 @@ Module Helpers.
     le_t_inj (n:=n') (m:=?(S (S m'))) (le_S (S m') H') with le_t_inj H' => {
         le_t_inj (n:=n') (m:=?(S (S m'))) (le_S (S m') H') H'' := le_S _ _ H''
       }.
+
+  Equations widen_le_t {m} (H: m <<= S (S m)) : S m <<= S (S m) :=
+    widen_le_t (m:=m') H' := le_S _ _ (le_n (S m')).
+
+  Equations widen_le_t_left0 {m} (H: 0 <<= S (S m)) : S 0 <<= S (S m) :=
+    widen_le_t_left0 (m:=0)    H' := widen_le_t H';
+    widen_le_t_left0 (m:=S m') (le_S _ _ H') := le_S _ _ (widen_le_t_left0 H').
+
+  Equations widen_le_t_S {n m} (H: n <<= m) : S n <<= S m :=
+    widen_le_t_S (n:=n') (m:=?(n')) (le_n ?(n')) :=  le_n (S n');
+    widen_le_t_S (n:=n') (m:=?(S m'))  (le_S n' m' H') :=
+     le_S _ _ (widen_le_t_S H').
 
 End Helpers.
