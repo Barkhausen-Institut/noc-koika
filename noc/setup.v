@@ -67,10 +67,10 @@ Module Instances.
   Derive NoConfusion for reg_t.
   
   Equations fin_idx {n} (r: (reg_t (S n))) : nat :=
-  fin_idx (router _ (@F1 n')   state) := 2 * n';
-  fin_idx (router _ (@FS n' _) state) := 2 * n';
-  fin_idx (router _ (@F1 n')   downstream) := 2 * n' + 1;
-  fin_idx (router _ (@FS n' _) downstream) := 2 * n' + 1.
+    fin_idx (router _ (@F1 n')   state) := 2 * n';
+    fin_idx (router _ (@FS n' _) state) := 2 * n';
+    fin_idx (router _ (@F1 n')   downstream) := 2 * n' + 1;
+    fin_idx (router _ (@FS n' _) downstream) := 2 * n' + 1.
 
   (* TODO move rename to [widen_le_t] *)
   Equations widen_fin_left {m} (H: m <<= S (S m)) : S m <<= S (S m) :=
@@ -108,55 +108,126 @@ Module Instances.
     lift (cons (router m f s) tl) with lift tl => {
         | tl' := cons (router (S m) (FS f) s) tl'
       }.
+
+  Equations lift_router {m} (r: reg_t m) : reg_t (S m) :=
+    lift_router (router m f s) := router (S m) (FS f) s.
   
-  Equations fin_elems'' m : list (reg_t (S m)) :=
-    fin_elems'' 0      := cons (router 0 F1 state) (cons (router 0 F1 downstream ) nil);
-    fin_elems'' (S m') with fin_elems'' m' => {
+  Equations fin_elems'' {m} : list (reg_t (S m)) :=
+    fin_elems'' (m:=0)      := cons (router 0 F1 state) (cons (router 0 F1 downstream) nil);
+    fin_elems'' (m:=(S m')) with fin_elems'' => {
       | tl := cons (router (S m') (@F1 (S m')) state)
                 (cons (router (S m') (@F1 (S m')) downstream)
-                   (lift tl))
+                   (map lift_router tl))
         }.
-  
-  Lemma lift_nth: forall n m f s (l : list (reg_t (S m))),
-    List.nth_error l n = Some (router m f s) ->
-    List.nth_error (lift l) n = Some (router (S m) (FS f) s).
+
+  Equations fin_idx'' {n} (idx:nat) (r: (reg_t (S n))) : nat :=
+    fin_idx'' idx' (router 0 (FS f) r)      := absurd_fin f;
+    fin_idx'' idx' (router (S m) (FS f) r)  := fin_idx'' (S idx') (router m f r);
+    fin_idx'' idx' (router m F1 state)      := 2 * idx' + 1;
+    fin_idx'' idx' (router m F1 downstream) := 2 * idx'.
+
+  Definition fin_idx' {n} (r: (reg_t (S n))) : nat := fin_idx'' 0 r.
+
+  Fixpoint finite_index_Fint {n} (f : Fin.t n) : nat :=
+    match f with
+    | Fin.F1 => 0
+    | Fin.FS f' => S (finite_index_Fint f')
+    end.
+
+  Definition a := @F1 2.
+  Definition b := FS a.
+
+  Check a.
+  Check b.
+  Compute (finite_index_Fint a).
+  Compute (finite_index_Fint b).
+
+  Compute (fin_idx' (router 2 a state)).
+  Compute (fin_idx' (router 2 a downstream)).
+  Compute (fin_idx' (router 3 b state)).
+  Compute (fin_idx' (router 3 b downstream)).
+
+  Definition c := FS (FS (FS (@F1 1))).
+
+  Compute (finite_index_Fint c).
+
+  Fixpoint finite_elements_Fint {n} : list (Fin.t n) :=
+    match n with
+    | O => []
+    | S _ => Fin.F1 :: map Fin.FS finite_elements_Fint
+    end.
+
+  Definition mod5 : list (Fin.t 5) := finite_elements_Fint.
+
+  Compute mod5.
+  Compute c.
+  Compute (finite_index_Fint c).
+
+  Definition router_mod5 := router 4 c state.
+  Definition routers_mod5 : list (reg_t 5) := fin_elems''.
+
+  Compute routers_mod5.
+
+  Equations fint_idx {n} (r: (reg_t (S n))) : nat :=
+    fint_idx (router 0 (FS f) r)              := absurd_fin f;
+    fint_idx (router m F1 state)      := 0;
+    fint_idx (router m F1 downstream) := 1;
+    fint_idx (router (S m) (FS f) r) := S (S (fint_idx (router m f r))).
+
+  Lemma regt_error {n} :
+    forall (r: (reg_t (S n))),
+      List.nth_error fin_elems'' (fint_idx r) = Some r.
   Proof.
-   intros n m f s l H.
-   funelim (lift _).
-   - simp lift. destruct n; depelim H.
-   - simpl in *; simp lift.
-     destruct n.
-     + simpl in *.
-       inversion H.
-       assert (f_eq_F1 := inj_right_pair H2).
-       subst.
-       exact eq_refl.
-     + simpl in *.
-       exact (Hind n f0 s0 H).
+    induction n; intros r; depelim r; depelim t; destruct r; simp fint_idx; simp fin_elems''; simpl; try (reflexivity || depelim t).
+    - specialize (IHn (router n F1 state)).
+      fold (lift_router (router n F1 state)).
+      apply map_nth_error.
+      exact IHn.
+    - specialize (IHn (router n (FS t) state)).
+      fold (lift_router (router n (FS t) state)).
+      apply map_nth_error.
+      exact IHn.
+    - specialize (IHn (router n F1 downstream)).
+      fold (lift_router (router n F1 downstream)).
+      apply map_nth_error.
+      exact IHn.
+    - specialize (IHn (router n (FS t) downstream)).
+      fold (lift_router (router n (FS t)downstream)).
+      apply map_nth_error.
+      exact IHn.
   Qed.
 
-  Lemma regt_error :
-    forall n (r: (reg_t (S n))),
-      List.nth_error (fin_elems'' n) (fin_idx r) = Some r.
+  Lemma regt_injective {n} :
+    NoDup (List.map (@fint_idx n) fin_elems'').
   Proof.
-  intros n r.
-  funelim (fin_elems'' n).
-  - funelim (fin_idx r); simp fin_idx; simpl; try (reflexivity || depelim t0).
-  - funelim (fin_idx r); simp fin_idx; simpl; rewrite <- plus_n_O.
-    + rewrite <- plus_n_Sm.
-      simpl.
-      specialize (Hind (router m' F1 state)).
-      simp fin_idx in Hind.
-      simpl in Hind.
-      rewrite <- plus_n_O in Hind.
-      apply lift_nth.
-  
+    assert (is_seq : (List.map (@fint_idx n) fin_elems'') = seq 0 ((S n)*2)).
+    induction n; simp fin_elems''; simp fint_idx; try reflexivity.
+    - do 2 rewrite map_cons.
+      rewrite map_map.
+      Check map_ext.
+      erewrite map_ext.
+      2:{
+        clear IHn.
+        intros a.
+        depelim a. simp lift_router. simp fint_idx.
+        instantiate (1:= fun x => S (S (fint_idx g))).
 
-  Instance Fin_regt : forall n, FiniteType (reg_t (S n)) :=
+        exact eq_refl. reflexivity.
+        funelim (lift_router n t r). depelim t.
+        simp lift_router.
+      }
+      Search map.
+      funelim (lift_router x).  rewrite <- map_map. unfold lift_router.
+      rewrite IHn.
+      unfold map. fold map.
+      unfold map in IHn.
+      rewrite IHn.
+
+  Instance Fin_regt {n} : FiniteType (reg_t (S n)) :=
   {
     finite_index := fin_idx;
     finite_elements := fin_elems;
-    finite_surjective: forall a: T, List.nth_error finite_elements (finite_index a) = Some a;
+    finite_surjective: regt_eror;
     finite_injective: NoDup (List.map finite_index finite_elements)
   }
 
