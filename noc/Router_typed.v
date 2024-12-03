@@ -10,9 +10,7 @@ Module Router
   (MyTypes: Typesize).
 
   Module NOC_type := Types MyTypes.
-  Import NOC_type.
-  Module NOC_setup := Setup MyTypes.
-  Import NOC_setup.
+  Import NOC_type Setup.
 
   Section Funs.
 

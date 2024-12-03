@@ -16,7 +16,7 @@ Module Actions
   (b : Typesize).
   (* Module s := Setup b. *)
   Module Routerfns := Router b.
-  Import Routerfns Routerfns.NOC_setup Helpers.
+  Import Routerfns Setup Helpers.
 
   Equations to_action {x_dim'} (rl : rule_name_t (S x_dim')) {x_dim_max : nat} (H: S x_dim' <<= S x_dim_max)
     : action (tau:= unit_t) (R (x_dim:=x_dim_max)) (Sigma (x_dim:=x_dim_max)) := (* Q: why S x_dim_max (tau:= unit_t)*)
@@ -104,8 +104,7 @@ Module FNoc
   (b: Typesize).
 
   Module d := Actions b.
-  Print d.
-  Import d d.Routerfns d.Routerfns.NOC_setup Helpers.
+  Import d d.Routerfns Setup Helpers.
 
   Equations to_action (rl : rule_name_t (S b.nocsize)) : 
     action (tau:= unit_t) (R (x_dim:=b.nocsize)) (Sigma (x_dim:=b.nocsize)) :=

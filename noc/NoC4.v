@@ -2,10 +2,11 @@ Require Import Koika.Frontend.
 Require Import Koika.Std.
 Require Import noc.actions.
 Require Import noc.Types.
+Require Import noc.helpers.
+Require Import noc.setup.
 Require Import Koika.Testing.
 
 (* Require Import Coq.Strings.Byte. *)
-
 
 Module MyTypeSize <: Typesize.
   Definition nocsize := 4.
@@ -13,7 +14,7 @@ Module MyTypeSize <: Typesize.
 End MyTypeSize.
 
 Module NoC4 := FNoc MyTypeSize.
-Import NoC4 NoC4.d.Routerfns NoC4.d.Routerfns.NOC_setup MyTypeSize. 
+Import NoC4 NoC4.d.Routerfns Setup MyTypeSize. 
 
 Definition r (reg : (reg_t (S nocsize))) : R reg :=
   match reg with
@@ -30,12 +31,12 @@ Definition r_r2l (reg : (reg_t (S nocsize))) : R reg :=
   |  _ => Bits.zero 
   end.
 
-
-(* Lemma P (n:nat) (H: NoC4.d.le_t (S n) (S nocsize)) :
+Import Instances.
+Lemma P (n:nat) (H: Helpers.le_t (S n) (S nocsize)) :
   run_schedule r_r2l to_action sigdenote schedule
     (fun ctxt =>
-      let bits_r := ctxt.[router nocsize (NoC4.d.widen_fin H (@Fin.F1 n)) state] in
-      Bits.to_nat bits_r = 0). *)
+      let bits_r := ctxt.[router nocsize (Helpers.widen_fin H (@Fin.F1 n)) state] in
+      Bits.to_nat bits_r = 0).
 
 Timeout 5 Definition package :=
     {|
