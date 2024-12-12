@@ -847,7 +847,7 @@ module Types =
   (** val addr_sz : int **)
 
   let addr_sz =
-    Nat.log2_up TS.nocsize
+    Nat.log2_up (Stdlib.Int.succ TS.nocsize)
 
   (** val basic_flit : type0 struct_sig' **)
 

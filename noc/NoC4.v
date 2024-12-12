@@ -18,6 +18,7 @@ End MyTypeSize.
 
 Module NoC4 := FNoc MyTypeSize.
 Import NoC4 NoC4.d.Routerfns Setup MyTypeSize Shows. 
+Print d.to_action.
 
 Definition r (reg : (reg_t (S nocsize))) : R reg :=
   match reg with
@@ -26,7 +27,7 @@ Definition r (reg : (reg_t (S nocsize))) : R reg :=
 
 Definition sigdenote (fn : (ext_fn_t (S nocsize))) : Sig_denote (Sigma fn) :=
   match fn with
-  | _ => fun x => x +b (Bits.of_nat 9 0)
+  | _ => fun x => x +b (Bits.of_nat 11 0)
   end.
 
 Definition r_r2l (reg : (reg_t (S nocsize))) : R reg :=
