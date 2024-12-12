@@ -9,7 +9,7 @@ End Typesize.
 
 Module Types (TS:Typesize).
 Import TS.
-Definition addr_sz := log2 nocsize.
+Definition addr_sz := log2 (S nocsize).
 
 Definition basic_flit :=
     {|
