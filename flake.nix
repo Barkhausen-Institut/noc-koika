@@ -3,7 +3,7 @@
     nixpkgs.follows = "koika/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
     koika = {
-      url = "github:Barkhausen-Institut/koika/master";
+      url = "github:maxkurze1/koika/cps-single-step";
       inputs.flake-utils.follows = "flake-utils";
     };
   };
@@ -39,19 +39,8 @@
     devShells.default = self.packages.${system}.default.overrideAttrs (_: {
       shellHook = ''
         alias ll="ls -lasi"
-        alias spacemacs="HOME=$(pwd) emacs"
       '';
       #          shellHook = ''
-      #            export XDG_CONFIG_HOME=$PWD/.config
-      #            export SPACEMACSDIR=$XDG_CONFIG_HOME/spacemacs
-      #
-      #            if ! test -d "$XDG_CONFIG_HOME/emacs" ; then
-      #              echo 'Installing spacemacs.'
-      #              mkdir -p "$XDG_CONFIG_HOME"
-      #              cp -Rp ${spacemacs} "$XDG_CONFIG_HOME/emacs"
-      #              chmod -R u+w "$XDG_CONFIG_HOME/emacs"
-      #            fi
-      #
       #            test -r ~/.shellrc && . ~/.shellrc
       #          '';
     });

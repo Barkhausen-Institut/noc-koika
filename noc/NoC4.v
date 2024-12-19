@@ -8,8 +8,7 @@ Require Import Koika.Testing.
 Require Import Coq.Vectors.Fin.
 Require Import noc.Show_fns.
 
-
-(* Require Import Coq.Strings.Byte. *)
+From Equations Require Import Equations.
 
 Module MyTypeSize <: Typesize.
   Definition nocsize := 4.
@@ -17,13 +16,13 @@ Module MyTypeSize <: Typesize.
 End MyTypeSize.
 
 Module NoC4 := FNoc MyTypeSize.
-Import NoC4 NoC4.d.Routerfns Setup MyTypeSize Shows. 
-Print d.to_action.
+Import NoC4 NoC4.d.Routerfns Setup MyTypeSize Shows.
+Import (hints) NoC4.d.
 
-Definition r (reg : (reg_t (S nocsize))) : R reg :=
-  match reg with
-  |  _ => Bits.zero
-  end.
+(* Definition r (reg : (reg_t (S nocsize))) : R reg := *)
+(*   match reg with *)
+(*   |  _ => Bits.zero *)
+(*   end. *)
 
 Definition sigdenote (fn : (ext_fn_t (S nocsize))) : Sig_denote (Sigma fn) :=
   match fn with
@@ -32,16 +31,28 @@ Definition sigdenote (fn : (ext_fn_t (S nocsize))) : Sig_denote (Sigma fn) :=
 
 Definition r_r2l (reg : (reg_t (S nocsize))) : R reg :=
   match reg with
-  |  _ => Bits.zero 
+  |  _ => Bits.zero
   end.
 
-Import Instances.
-Lemma P (n:nat) (H: Helpers.le_t (S n) (S nocsize)) :
-  run_schedule r_r2l to_action sigdenote schedule
+Import Instances Helpers.
+
+(** * Fixed-size NoC property
+    This property talks about a NoC of size [nocsize=4].
+ *)
+
+Lemma P4 (n:nat) (H: (S n) <<= (S nocsize)) :
+  run_schedule_compact r_r2l to_action sigdenote schedule
     (fun ctxt =>
       let bits_r := ctxt.[router nocsize (Helpers.widen_fin H (@Fin.F1 n)) state] in
       Bits.to_nat bits_r = 0).
-    Admitted.
+Proof.
+  unfold nocsize, run_schedule_compact, create.
+  simp schedule.
+ Print Rewrite HintDb schedule.
+ simp schedule.
+ rewrite <- interp_scheduler_cps_correct. Search interp_scheduler_cps.
+
+Admitted.
 
 
 Definition rule_external (rule : (rule_name_t (S nocsize))) : bool:=

@@ -43,16 +43,16 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1731508169,
-        "narHash": "sha256-msIEZmrAkdSwiQESMeUCfRMSoZMCke1h5Gjb5l+Fibg=",
-        "owner": "Barkhausen-Institut",
+        "lastModified": 1734435626,
+        "narHash": "sha256-BXpyGTi3KkYAyTrSAaby6EzR0ZdvVJ+8QguwQmX4IRE=",
+        "owner": "maxkurze1",
         "repo": "koika",
-        "rev": "96e4859ef10b1cc13442e5f62692ff28335f724e",
+        "rev": "a191de0a0d4d15414d483778008b8248f392a64d",
         "type": "github"
       },
       "original": {
-        "owner": "Barkhausen-Institut",
-        "ref": "master",
+        "owner": "maxkurze1",
+        "ref": "cps-single-step",
         "repo": "koika",
         "type": "github"
       }

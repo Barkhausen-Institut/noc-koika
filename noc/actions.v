@@ -72,8 +72,9 @@ Module Actions
     to_action (rule (S c) (FS c')) (x_dim_max:=?(S c)) H :=
       to_action (rule c c') (le_t_inj H).
 
-Equations schedule {x_dim'} {x_dim_max : nat} (H: S x_dim' <<= S x_dim_max)
-  : Syntax.scheduler pos_t (rule_name_t (S x_dim_max)) :=
+
+  Equations schedule {x_dim'} {x_dim_max : nat} (H: S x_dim' <<= S x_dim_max)
+    : Syntax.scheduler pos_t (rule_name_t (S x_dim_max)) :=
 
     (* rule 0 for max_dim 1 *)
     schedule (x_dim':= 0) (x_dim_max:= 0) (@le_n ?(S 0)) :=
