@@ -14,7 +14,7 @@ Import String.
 Open Scope bs.
 
 (*nat2 AST*)
-Definition nat_inductive (no_cstr :nat)  :=
+Definition nat_inductive  :=
   {|
   ind_finite := Finite;
   ind_npars := 0;
@@ -61,10 +61,10 @@ Definition nat_inductive (no_cstr :nat)  :=
   ind_variance := None
 |}.
 
-Class Add (T:Type) := {
-  zero: T;
-  plus: T -> T -> T
-}.
+(* Class Add (T:Type) := { *)
+(*   zero: T; *)
+(*   plus: T -> T -> T *)
+(* }. *)
 
 (* Instance AddNat : Add nat := {
   zero := 0;
@@ -72,14 +72,14 @@ Class Add (T:Type) := {
 }. *)
 (* Lemma P1 (T:Type) (H: Add T) (n:T) : plus zero n = n. *)
 
-Axiom reify : mutual_inductive_body -> { T & Add T }.
-Definition P3 {T:Type} `{Add T} (T:Type) :=forall n: plus zero n = n .
+(* Axiom reify : mutual_inductive_body -> { T & Add T }. *)
+(* Definition P3 {T:Type} `{Add T} (T:Type) :=forall n: plus zero n = n . *)
 
-Lemma XYZ : forall (n:nat),
-  let my_nat := reify (nat_inductive n)
-  in P3 my_nat.
+(* Lemma XYZ : forall (n:nat), *)
+(*   let my_nat := reify (nat_inductive n) *)
+(*   in P3 my_nat. *)
 
-MetaCoq Run (tmMkInductive' (nat_inductive 2)).
+MetaCoq Run (tmMkInductive' nat_inductive).
 
 Fixpoint plus2 (n : nat2) (m : nat2) : nat2 :=
   match n with
@@ -120,8 +120,7 @@ Definition ind_decls := InductiveDecl nat_inductive.
 Definition kername_of_string (s : string) : kername :=
   (MPfile [], s).
 
-
-Definition global_declaraton_nat := (kername_of_string "some", ind_decls). 
+Definition global_declaraton_nat := (kername_of_string "some", ind_decls).
 Definition Sigma_env: global_env  := add_global_decl (fst sth_q) global_declaraton_nat.
 Definition universes := Monomorphic_ctx.
 
@@ -189,52 +188,50 @@ Check tApp.
 Definition Sigma2 : global_env_ext := (Sigma2_env, universes). *)
 
 
-Class Add (T:Type) := {
-  zero: T;
-  plus: T -> T -> T
-}.
+(* Class Add (T:Type) := { *)
+(*   zero: T; *)
+(*   plus: T -> T -> T *)
+(* }. *)
 
 (* Lemma P1 (T:Type) (H: Add T) (n:T) : plus zero n = n. *)
 
 
-Definition P3 {T:Type} `{Add T} (n:T) : plus zero n = n.
-Admitted.
+(* Definition P3 {T:Type} `{Add T} (n:T) : plus zero n = n. *)
+(* Admitted. *)
 
-Axiom reify ast: mutual_inductive_body.
-Lemma XYZ : forall (n:nat),
-  let my_nat := reify (nat_inductive n)
-  in P my_nat.
-Axiom reify
+(* Axiom reify ast: mutual_inductive_body. *)
+(* Lemma XYZ : forall (n:nat), *)
+(*   let my_nat := reify (nat_inductive n) *)
+(*   in P my_nat. *)
+(* Axiom reify *)
+
+Definition Sigma' : global_env_ext := (P_quoted.1, universes).
 
 
+Lemma XYZ :
+  {t & Sigma' ;;; [ ] |- t : P_quoted.2 }.
+Proof.
+  simpl.
+  eexists.
 
-Lemma XYZ : 
-  {t & Sigma ;;; [ ] |- t : P_quoted.2 }.
-  Proof.
-    simpl.
-    eexists.
-    (* unfold Sigma. unfold Sigma_env.
-    unfold add_global_decl. *)
-    simpl.
-    eapply (refine_type).
-    2: { unfold P_copy.
-    simpl.
-    
-    replace_quotation_of_goal ().
+  (** * Start unfolding
+    load the constant [P] from [Sigma']
+   *)
+  eapply type_Conv.
+  3:{
+    eapply cumul_red_r.
+    2:{
+      eapply red_delta.
+      - eapply declared_constant_from_gen.
+        eapply lookup_constant_declared_gen.
+        reflexivity.
+      - reflexivity.
     }
-    
-
- Check squash.
- Locate squash.
-  Lemma XYZ : 
-  {t |  Sigma ;;; [ ] |- t : tApp P_quoted.2 (snd nat_quoted::nil) }.
-  Proof.
-
-Lemma XYZ : 
-  {t & Sigma ;;; [ ] |- t :  }.
-
-
-Lemma XYZ : 
-  {t & Sigma ;;; [ ] |- t : tApp <% P %> (snd nat_quoted::nil) }.
-  Proof.
-  Unset Printing Notations.
+    eapply cumul_refl.
+    eapply TermEquality.leq_term_refl.
+  }
+  (** * Done unfolding
+    I leave the second goal open because the
+    sort is defined when clearing the goal
+    that computes the proof term.
+   *)
