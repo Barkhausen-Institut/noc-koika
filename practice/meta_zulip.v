@@ -235,3 +235,25 @@ Proof.
     sort is defined when clearing the goal
     that computes the proof term.
    *)
+
+  eapply type_Lambda.
+
+  (* Now I have to provide evidence that [nat2] is
+     indeed properly typed/kinded/sorted.
+   *)
+  unfold lift_typing0.
+  unfold lift_sorting.
+  simpl.
+  split.
+  - exact tt.
+  - eexists.
+    split.
+    + instantiate (1:= (sType (Universe.make' Level.lzero))).
+      erewrite <- (closedu_subst_instance []).
+      2:{ simpl. unfold closedu_universe. simpl.
+          rewrite for_all_elements.
+          simpl. trivial.}
+      Fail eapply type_Ind.
+      fold (ind_type (Build_one_inductive_body "nat2" [] (sType (Universe.make' Level.lzero)) (tSort (sType (Universe.make' Level.lzero))) IntoAny [] [] Relevant)).
+      (* TODO Is the a way to do the previous step via existentials. *))
+      eapply type_Ind.
