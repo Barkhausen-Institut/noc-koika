@@ -255,5 +255,5 @@ Proof.
           simpl. trivial.}
       Fail eapply type_Ind.
       fold (ind_type (Build_one_inductive_body "nat2" [] (sType (Universe.make' Level.lzero)) (tSort (sType (Universe.make' Level.lzero))) IntoAny [] [] Relevant)).
-      (* TODO Is the a way to do the previous step via existentials. *))
+      (* TODO Is the a way to do the previous step via existentials. *)
       eapply type_Ind.
