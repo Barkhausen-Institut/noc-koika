@@ -76,7 +76,7 @@ Timimg Atack Resilient - In order to avoid timing attacks, the communication del
 
 Router Level
 
-* No packet loss inside the router
+* No packet loss inside the router   
 * No packet duplication insdie the router
 * No packet modification inside the router
 * Packet that enters the router will eventually leave the router at some point of time
@@ -92,6 +92,10 @@ Bufferlevel
 * Read and write pointers are not incremented when buffers are full or empty
 * The same number of packets that were written into the buffer can be read
 * Data that was read from buffer was written into it at some point
+
+Security Properties
+
+* Data Alteration Avoidance -  ()
 ## References
 
 [^1] title={A functional formalization of on chip communications},year={2008},author={Julien Schmaltz and Julien Schmaltz and D. Borrione and Dominique Borrione
